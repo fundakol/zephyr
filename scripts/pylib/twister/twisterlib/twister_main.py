@@ -12,15 +12,16 @@ import time
 
 import colorama
 from colorama import Fore
-from twisterlib.coverage import run_coverage
-from twisterlib.environment import TwisterEnv
-from twisterlib.hardwaremap import HardwareMap
-from twisterlib.log_helper import close_logging, setup_logging
-from twisterlib.package import Artifacts
-from twisterlib.reports import Reporting
-from twisterlib.runner import TwisterRunner
-from twisterlib.statuses import TwisterStatus
-from twisterlib.testplan import TestPlan
+
+from twister.twisterlib.coverage import run_coverage
+from twister.twisterlib.environment import TwisterEnv
+from twister.twisterlib.hardwaremap import HardwareMap
+from twister.twisterlib.log_helper import close_logging, setup_logging
+from twister.twisterlib.package import Artifacts
+from twister.twisterlib.reports import Reporting
+from twister.twisterlib.runner import TwisterRunner
+from twister.twisterlib.statuses import TwisterStatus
+from twister.twisterlib.testplan import TestPlan
 
 
 def init_color(colorama_strip):
@@ -111,7 +112,7 @@ def twister(options: argparse.Namespace, default_options: argparse.Namespace):
 
     if options.verbose > 0:
         for i in tplan.instances.values():
-            if i.status in [TwisterStatus.SKIP,TwisterStatus.FILTER]:
+            if i.status in [TwisterStatus.SKIP, TwisterStatus.FILTER]:
                 if options.platform and not tplan.check_platform(i.platform, options.platform):
                     continue
                 # Filtered tests should be visable only when verbosity > 1

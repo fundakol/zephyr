@@ -12,10 +12,11 @@ import shutil
 from argparse import Namespace
 from itertools import groupby
 
-import list_boards
-import scl
-from twisterlib.constants import SUPPORTED_SIMS
-from twisterlib.environment import ZEPHYR_BASE
+import list_boards  # type: ignore[import-not-found]
+
+from twister import scl
+from twister.twisterlib.constants import SUPPORTED_SIMS
+from twister.twisterlib.environment import ZEPHYR_BASE
 
 logger = logging.getLogger('twister')
 
@@ -26,8 +27,8 @@ class Simulator:
     def __init__(self, data: dict[str, str]):
         assert "name" in data
         assert data["name"] in SUPPORTED_SIMS
-        self.name = data["name"]
-        self.exec = data.get("exec")
+        self.name: str = data["name"]
+        self.exec: str = data.get("exec", "")
 
     def is_runnable(self) -> bool:
         if self.name == "simics":
@@ -68,27 +69,27 @@ class Platform:
         # if no RAM size is specified by the board, take a default of 128K
         self.ram = 128
 
-        self.timeout_multiplier = 1.0
-        self.ignore_tags = []
-        self.only_tags = []
-        self.default = False
+        self.timeout_multiplier: float = 1.0
+        self.ignore_tags: list[str] = []
+        self.only_tags: list[str] = []
+        self.default: bool = False
         # if no flash size is specified by the board, take a default of 512K
-        self.flash = 512
+        self.flash: int = 512
         self.supported = set()
         self.binaries = []
 
         self.arch = None
-        self.vendor = ""
-        self.tier = -1
-        self.type = "na"
+        self.vendor: str = ""
+        self.tier: int = -1
+        self.type: str = "na"
         self.simulators: list[Simulator] = []
         self.simulation: str = "na"
         self.supported_toolchains = []
         self.env = []
-        self.env_satisfied = True
+        self.env_satisfied: bool = True
         self.filter_data = dict()
-        self.uart = ""
-        self.resc = ""
+        self.uart: str = ""
+        self.resc: str = ""
 
     def load(self, board, target, aliases, data, variant_data):
         """Load the platform data from the board data and target data
@@ -182,7 +183,7 @@ class Platform:
 
     def simulator_by_name(self, sim_name: str | None) -> Simulator | None:
         if sim_name:
-            return next(filter(lambda s: s.name == sim_name, iter(self.simulators)), None)
+            return next(filter(lambda s: s.name == sim_name, iter(self.simulators)), None)  # type: ignore
         else:
             return next(iter(self.simulators), None)
 

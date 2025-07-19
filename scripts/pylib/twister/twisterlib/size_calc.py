@@ -10,7 +10,7 @@ import re
 import subprocess
 import sys
 
-from twisterlib.error import TwisterRuntimeError
+from twister.twisterlib.error import TwisterRuntimeError
 
 logger = logging.getLogger('twister')
 
@@ -117,7 +117,7 @@ class SizeCalculator:
         """
         self.elf_filename = elf_filename
         self.buildlog_filename = buildlog_filepath
-        self.sections = []
+        self.sections: list = []
         self.used_rom = 0
         self.used_ram = 0
         self.available_ram = 0
@@ -358,7 +358,7 @@ class SizeCalculator:
             result = []
             PATTERN_SPLIT_COLUMNS = "  +"
             for line in text_lines:
-                line = [
+                line = [  # type: ignore[assignment]
                     column.rstrip(":") for column in re.split(
                         pattern=PATTERN_SPLIT_COLUMNS,
                         string=line
@@ -426,7 +426,7 @@ class SizeCalculator:
         )
 
         if data_line_start_idx < 0:
-            data_from_content = [[]]
+            data_from_content: list[list[str]] = [[]]
         else:
             # Clean lines and separate information to columns
             information_lines = self._get_lines_with_footprint(

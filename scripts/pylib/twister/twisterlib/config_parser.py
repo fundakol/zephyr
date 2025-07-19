@@ -7,8 +7,8 @@ import copy
 import warnings
 from typing import Any
 
-import scl
-from twisterlib.error import ConfigurationError
+from twister import scl
+from twister.twisterlib.error import ConfigurationError
 
 
 def extract_fields_from_arg_list(
