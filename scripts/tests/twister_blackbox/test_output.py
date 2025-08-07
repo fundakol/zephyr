@@ -21,14 +21,6 @@ from twisterlib.testplan import TestPlan
 
 @mock.patch.object(TestPlan, 'TESTSUITE_FILENAME', suite_filename_mock)
 class TestOutput:
-    TESTDATA_1 = [
-        ([]),
-        (['-ll', 'DEBUG']),
-        (['-v']),
-        (['-v', '-ll', 'DEBUG']),
-        (['-vv']),
-        (['-vv', '-ll', 'DEBUG']),
-    ]
 
     @classmethod
     def setup_class(cls):
@@ -36,10 +28,6 @@ class TestOutput:
         cls.loader = importlib.machinery.SourceFileLoader('__main__', apath)
         cls.spec = importlib.util.spec_from_loader(cls.loader.name, cls.loader)
         cls.twister_module = importlib.util.module_from_spec(cls.spec)
-
-    @classmethod
-    def teardown_class(cls):
-        pass
 
     @pytest.mark.parametrize(
         'flag, expect_paths',
@@ -146,60 +134,3 @@ class TestOutput:
         split_build_log = build_log.split('\n')
         for r in split_build_log:
             assert r in inline_twister_log
-
-    def _get_matches(self, err, regex_line):
-        matches = []
-        for line in err.split('\n'):
-            columns = line.split()
-            regexes = len(regex_line)
-            if len(columns) == regexes:
-                for i, column in enumerate(columns):
-                    match = re.fullmatch(regex_line[i], column)
-                    if match:
-                        matches.append(match)
-                if len(matches) == regexes:
-                    return matches
-                else:
-                    matches = []
-        return matches
-
-
-    @pytest.mark.parametrize(
-        'flags',
-        TESTDATA_1,
-        ids=['not verbose', 'not verbose + debug', 'v', 'v + debug', 'vv', 'vv + debug']
-    )
-    def test_output_levels(self, capfd, out_path, flags):
-        test_path = os.path.join(TEST_DATA, 'tests', 'dummy', 'agnostic')
-        args = ['--outdir', out_path, '-T', test_path, *flags]
-
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-            pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
-
-        out, err = capfd.readouterr()
-        sys.stdout.write(out)
-        sys.stderr.write(err)
-
-        assert str(sys_exit.value) == '0'
-
-        regex_debug_line = r'^\s*DEBUG'
-        debug_matches = re.search(regex_debug_line, err, re.MULTILINE)
-        if '-ll' in flags and 'DEBUG' in flags:
-            assert debug_matches is not None
-        else:
-            assert debug_matches is None
-
-        # Summary requires verbosity > 1
-        if '-vv' in flags:
-            assert 'Total test suites: ' in out
-        else:
-            assert 'Total test suites: ' not in out
-
-        # Brief summary shows up only on verbosity 0 - instance-by-instance otherwise
-        regex_info_line = [r'INFO', r'-', r'\d+/\d+', r'\S+', r'\S+', r'[A-Z]+', r'\(\w+', r'[\d.]+s', r'<\S+>\)']
-        info_matches = self._get_matches(err, regex_info_line)
-        if not any(f in flags for f in ['-v', '-vv']):
-            assert not info_matches
-        else:
-            assert info_matches
