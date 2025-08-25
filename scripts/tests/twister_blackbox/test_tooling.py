@@ -16,8 +16,8 @@ import json
 
 # pylint: disable=no-name-in-module
 from conftest import ZEPHYR_BASE, TEST_DATA, sample_filename_mock, suite_filename_mock
-from twisterlib.statuses import TwisterStatus
-from twisterlib.testplan import TestPlan
+from twister.twisterlib.statuses import TwisterStatus
+from twister.twisterlib.testplan import TestPlan
 
 
 class TestTooling:

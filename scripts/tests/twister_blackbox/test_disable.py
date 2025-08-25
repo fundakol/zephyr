@@ -15,7 +15,7 @@ import re
 
 # pylint: disable=no-name-in-module
 from conftest import ZEPHYR_BASE, TEST_DATA, suite_filename_mock
-from twisterlib.testplan import TestPlan
+from twister.twisterlib.testplan import TestPlan
 
 
 @mock.patch.object(TestPlan, 'TESTSUITE_FILENAME', suite_filename_mock)

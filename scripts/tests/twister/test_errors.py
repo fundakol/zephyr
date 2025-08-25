@@ -7,12 +7,13 @@ Tests for the error classes
 """
 
 import os
+from pathlib import Path
+
 import pytest
 
-from pathlib import Path
-from twisterlib.error import StatusAttributeError
-from twisterlib.error import ConfigurationError
-from twisterlib.harness import Test
+from twister.twisterlib.error import ConfigurationError
+from twister.twisterlib.error import StatusAttributeError
+from twister.twisterlib.harness import Test
 
 
 def test_configurationerror():

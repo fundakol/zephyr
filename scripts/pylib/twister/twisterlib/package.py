@@ -7,7 +7,7 @@ import json
 import os
 import tarfile
 
-from twisterlib.statuses import TwisterStatus
+from twister.twisterlib.statuses import TwisterStatus
 
 
 class Artifacts:

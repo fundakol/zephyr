@@ -7,21 +7,16 @@ Tests for scl.py functions
 """
 
 import logging
-from unittest import mock
-import os
-import pytest
 import sys
-
-ZEPHYR_BASE = os.getenv("ZEPHYR_BASE")
-sys.path.insert(0, os.path.join(ZEPHYR_BASE, "scripts/pylib/twister"))
-
-import scl
-
 from contextlib import nullcontext
 from importlib import reload
+from unittest import mock
+
+import pytest
 from pykwalify.errors import SchemaError
 from yaml.scanner import ScannerError
 
+import twister.scl
 
 TESTDATA_1 = [
     (False),
@@ -71,16 +66,15 @@ def test_yaml_imports(fail_c):
 
     with mock.patch.dict('sys.modules', modules_mock, clear=True), \
          mock.patch('sys.meta_path', meta_path_mock):
-        reload(scl)
+        reload(twister.scl)
 
-    assert sys.modules['scl'].Loader == loader_mock if fail_c else \
+    assert sys.modules['twister.scl'].Loader == loader_mock if fail_c else \
                                         cloader_mock
 
-    assert sys.modules['scl'].SafeLoader == safeloader_mock if fail_c else \
+    assert sys.modules['twister.scl'].SafeLoader == safeloader_mock if fail_c else \
                                         csafeloader_mock
 
-    assert sys.modules['scl'].Dumper == dumper_mock if fail_c else \
-                                        cdumper_mock
+    assert sys.modules['twister.scl'].Dumper == dumper_mock if fail_c else cdumper_mock
 
     import yaml
     reload(yaml)
@@ -111,7 +105,7 @@ def test_pykwalify_import(caplog, fail_pykwalify, log_level, expected_logs):
 
     with mock.patch.dict('sys.modules', modules_mock, clear=True), \
          mock.patch('sys.meta_path', meta_path_mock):
-        reload(scl)
+        reload(twister.scl)
 
     if log_level:
         assert logging.getLogger('pykwalify.core').level == log_level
@@ -119,10 +113,10 @@ def test_pykwalify_import(caplog, fail_pykwalify, log_level, expected_logs):
     assert all([log in caplog.text for log in expected_logs])
 
     if fail_pykwalify:
-        assert scl._yaml_validate(None, None) is None
-        assert scl._yaml_validate(mock.Mock(), mock.Mock()) is None
+        assert twister.scl._yaml_validate(None, None) is None
+        assert twister.scl._yaml_validate(mock.Mock(), mock.Mock()) is None
 
-    reload(scl)
+    reload(twister.scl)
 
 
 TESTDATA_3 = [
@@ -160,7 +154,7 @@ def test_yaml_load(caplog, fail_parsing):
     with mock.patch('yaml.load', side_effect=mock_load), \
          mock.patch('builtins.open', mock.mock_open()) as mock_file:
         with pytest.raises(ScannerError) if fail_parsing else nullcontext():
-            result = scl.yaml_load(filename)
+            result = twister.scl.yaml_load(filename)
 
     mock_file.assert_called_with('dummy/file.yaml', 'r', encoding='utf-8')
 
@@ -202,10 +196,10 @@ def test_yaml_load_verify(validate, fail_load, expected_error):
             return True
         raise SchemaError(u'Schema validation failed.')
 
-    with mock.patch('scl.yaml_load', side_effect=mock_load), \
-         mock.patch('scl._yaml_validate', side_effect=mock_validate), \
+    with mock.patch('twister.scl.yaml_load', side_effect=mock_load), \
+         mock.patch('twister.scl._yaml_validate', side_effect=mock_validate), \
          pytest.raises(expected_error) if expected_error else nullcontext():
-        res = scl.yaml_load_verify(filename, schema_mock)
+        res = twister.scl.yaml_load_verify(filename, schema_mock)
 
     if validate:
         assert res == data_mock
@@ -241,7 +235,7 @@ def test_yaml_validate(schema_exists, validate, expected_error):
 
     with mock.patch('pykwalify.core.Core', core_mock), \
          pytest.raises(expected_error) if expected_error else nullcontext():
-        scl._yaml_validate(data_mock, schema_mock)
+        twister.scl._yaml_validate(data_mock, schema_mock)
 
     if schema_exists:
         core_mock.assert_called_once()
@@ -252,5 +246,5 @@ def test_yaml_validate(schema_exists, validate, expected_error):
 def test_yaml_load_empty_file(tmp_path):
     quarantine_file = tmp_path / 'empty_quarantine.yml'
     quarantine_file.write_text("# yaml file without data")
-    with pytest.raises(scl.EmptyYamlFileException):
-        scl.yaml_load_verify(quarantine_file, None)
+    with pytest.raises(twister.scl.EmptyYamlFileException):
+        twister.scl.yaml_load_verify(quarantine_file, None)

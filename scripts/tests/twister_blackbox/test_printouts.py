@@ -21,7 +21,7 @@ from conftest import (
     sample_filename_mock,
     suite_filename_mock
 )
-from twisterlib.testplan import TestPlan
+from twister.twisterlib.testplan import TestPlan
 
 
 @mock.patch.object(TestPlan, 'TESTSUITE_FILENAME', suite_filename_mock)

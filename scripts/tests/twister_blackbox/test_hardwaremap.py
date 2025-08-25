@@ -13,7 +13,7 @@ import sys
 
 # pylint: disable=no-name-in-module
 from conftest import ZEPHYR_BASE, suite_filename_mock, clear_log_in_test
-from twisterlib.testplan import TestPlan
+from twister.twisterlib.testplan import TestPlan
 
 sys.path.insert(0, os.path.join(ZEPHYR_BASE, "scripts/pylib/twister/twisterlib"))
 

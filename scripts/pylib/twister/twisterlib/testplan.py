@@ -20,22 +20,23 @@ from collections import OrderedDict
 from itertools import islice
 from pathlib import Path
 
+from zephyr_module import parse_modules
+
 import snippets
+from twister import scl
+from twister.twisterlib.config_parser import TwisterConfigParser
+from twister.twisterlib.error import TwisterRuntimeError
+from twister.twisterlib.platform import Platform, generate_platforms
+from twister.twisterlib.quarantine import Quarantine
+from twister.twisterlib.statuses import TwisterStatus
+from twister.twisterlib.testinstance import TestInstance
+from twister.twisterlib.testsuite import TestSuite, scan_testsuite_path
 
 try:
     from anytree import Node, RenderTree, find
 except ImportError:
     print("Install the anytree module to use the --test-tree option")
 
-import scl
-from twisterlib.config_parser import TwisterConfigParser
-from twisterlib.error import TwisterRuntimeError
-from twisterlib.platform import Platform, generate_platforms
-from twisterlib.quarantine import Quarantine
-from twisterlib.statuses import TwisterStatus
-from twisterlib.testinstance import TestInstance
-from twisterlib.testsuite import TestSuite, scan_testsuite_path
-from zephyr_module import parse_modules
 
 logger = logging.getLogger('twister')
 
