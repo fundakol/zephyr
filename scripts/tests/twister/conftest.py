@@ -7,17 +7,26 @@
 import logging
 import os
 import sys
+
 import pytest
+
+if (ZEPHYR_BASE := os.getenv("ZEPHYR_BASE")) is None:
+    raise RuntimeError("$ZEPHYR_BASE environment variable undefined")
+
+# make all modules importable in the tests
+sys.path.insert(0, os.path.join(ZEPHYR_BASE, "scripts"))
+sys.path.insert(0, os.path.join(ZEPHYR_BASE, "scripts/pylib"))
+sys.path.insert(0, os.path.join(ZEPHYR_BASE, "scripts/tests"))
+sys.path.insert(0, os.path.join(ZEPHYR_BASE, "scripts/pytlib/pytest-twister-harness/src"))
+
+from twister.twisterlib.environment import TwisterEnv, add_parse_arguments, parse_arguments
+from twister.twisterlib.testinstance import TestInstance
+from twister.twisterlib.testplan import TestPlan, TestConfiguration
+
 
 pytest_plugins = ["pytester"]
 logging.getLogger("twister").setLevel(logging.DEBUG)  # requires for testing twister
 
-ZEPHYR_BASE = os.getenv("ZEPHYR_BASE")
-sys.path.insert(0, os.path.join(ZEPHYR_BASE, "scripts/pylib/twister"))
-sys.path.insert(0, os.path.join(ZEPHYR_BASE, "scripts"))
-from twisterlib.testplan import TestPlan, TestConfiguration
-from twisterlib.testinstance import TestInstance
-from twisterlib.environment import TwisterEnv, add_parse_arguments, parse_arguments
 
 def new_get_toolchain(*args, **kwargs):
     return 'zephyr'

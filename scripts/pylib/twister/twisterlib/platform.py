@@ -12,10 +12,11 @@ import shutil
 from argparse import Namespace
 from itertools import groupby
 
-import list_boards
-import scl
-from twisterlib.constants import SUPPORTED_SIMS
-from twisterlib.environment import ZEPHYR_BASE
+import list_boards  # type: ignore[import-not-found]
+
+from twister import scl
+from twister.twisterlib.constants import SUPPORTED_SIMS
+from twister.twisterlib.environment import ZEPHYR_BASE
 
 logger = logging.getLogger('twister')
 

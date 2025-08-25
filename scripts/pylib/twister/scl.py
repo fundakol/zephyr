@@ -9,15 +9,22 @@
 # Zephyr's sanity check testcases.
 
 import logging
+
 import yaml
+
+
 try:
     # Use the C LibYAML parser if available, rather than the Python parser.
     # It's much faster.
+    from yaml import CDumper as Dumper
     from yaml import CLoader as Loader
     from yaml import CSafeLoader as SafeLoader
-    from yaml import CDumper as Dumper
 except ImportError:
-    from yaml import Loader, SafeLoader, Dumper
+    from yaml import (
+        Dumper,
+        Loader,
+        SafeLoader
+    )
 
 log = logging.getLogger("scl")
 
@@ -55,6 +62,7 @@ def yaml_load(filename):
 # otherwise, it is a stub and we'd warn about it.
 try:
     import pykwalify.core
+
     # Don't print error messages yourself, let us do it
     logging.getLogger("pykwalify.core").setLevel(50)
 

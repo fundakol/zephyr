@@ -1,4 +1,4 @@
-from twisterlib.mixins import DisablePyTestCollectionMixin
+from twister.twisterlib.mixins import DisablePyTestCollectionMixin
 
 
 class TestClassToIgnore(DisablePyTestCollectionMixin):

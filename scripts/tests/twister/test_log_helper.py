@@ -7,13 +7,12 @@ Tests for log_helper.py functions
 """
 
 import logging
+from importlib import reload
 from unittest import mock
+
 import pytest
 
-from importlib import reload
-
-import twisterlib.log_helper
-
+import twister.twisterlib.log_helper
 
 TESTDATA = [
     ('Windows', 'dummy message: [\'dummy\', \'command\', \'-flag\']'),
@@ -33,9 +32,9 @@ def test_log_command(caplog, system, expected_log):
     args = ['dummy', 'command', '-flag']
 
     with mock.patch('platform.system', return_value=system):
-        reload(twisterlib.log_helper)
-        twisterlib.log_helper.log_command(logger, message, args)
+        reload(twister.twisterlib.log_helper)
+        twister.twisterlib.log_helper.log_command(logger, message, args)
 
-    reload(twisterlib.log_helper)
+    reload(twister.twisterlib.log_helper)
 
     assert expected_log in caplog.text

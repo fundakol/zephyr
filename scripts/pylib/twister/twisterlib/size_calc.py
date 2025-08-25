@@ -10,7 +10,7 @@ import re
 import subprocess
 import sys
 
-from twisterlib.error import TwisterRuntimeError
+from twister.twisterlib.error import TwisterRuntimeError
 
 logger = logging.getLogger('twister')
 

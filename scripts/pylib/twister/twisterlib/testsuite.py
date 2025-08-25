@@ -12,10 +12,10 @@ import re
 from enum import Enum
 from pathlib import Path
 
-from twisterlib.environment import canonical_zephyr_base
-from twisterlib.error import StatusAttributeError, TwisterException, TwisterRuntimeError
-from twisterlib.mixins import DisablePyTestCollectionMixin
-from twisterlib.statuses import TwisterStatus
+from twister.twisterlib.environment import canonical_zephyr_base
+from twister.twisterlib.error import StatusAttributeError, TwisterException, TwisterRuntimeError
+from twister.twisterlib.mixins import DisablePyTestCollectionMixin
+from twister.twisterlib.statuses import TwisterStatus
 
 logger = logging.getLogger('twister')
 

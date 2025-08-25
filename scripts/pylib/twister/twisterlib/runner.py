@@ -22,43 +22,38 @@ from multiprocessing.managers import BaseManager
 
 import elftools
 import yaml
+from anytree import Node, RenderTree
+from build_helpers.domains import Domains
 from colorama import Fore
 from elftools.elf.elffile import ELFFile
 from elftools.elf.sections import SymbolTableSection
 from packaging import version
-from twisterlib.cmakecache import CMakeCache
-from twisterlib.environment import canonical_zephyr_base
-from twisterlib.error import BuildError, ConfigurationError, StatusAttributeError
-from twisterlib.log_helper import setup_logging
-from twisterlib.statuses import TwisterStatus
+
+from twister import expr_parser
+from twister.twisterlib.cmakecache import CMakeCache
+from twister.twisterlib.coverage import run_coverage_instance
+from twister.twisterlib.environment import TwisterEnv, canonical_zephyr_base
+from twister.twisterlib.error import BuildError, ConfigurationError, StatusAttributeError
+from twister.twisterlib.harness import Ctest, HarnessImporter, Pytest
+from twister.twisterlib.log_helper import log_command, setup_logging
+from twister.twisterlib.platform import Platform
+from twister.twisterlib.statuses import TwisterStatus
+from twister.twisterlib.testinstance import TestInstance
+from twister.twisterlib.testplan import change_skip_to_error_if_integration
+from twister.twisterlib.testsuite import TestSuite
 
 if version.parse(elftools.__version__) < version.parse('0.24'):
     sys.exit("pyelftools is out of date, need version 0.24 or later")
 
 # Job server only works on Linux for now.
 if sys.platform == 'linux':
-    from twisterlib.jobserver import GNUMakeJobClient, GNUMakeJobServer, JobClient
-
-from twisterlib.environment import ZEPHYR_BASE
-
-sys.path.insert(0, os.path.join(ZEPHYR_BASE, "scripts/pylib/build_helpers"))
-from domains import Domains
-from twisterlib.coverage import run_coverage_instance
-from twisterlib.environment import TwisterEnv
-from twisterlib.harness import Ctest, HarnessImporter, Pytest
-from twisterlib.log_helper import log_command
-from twisterlib.platform import Platform
-from twisterlib.testinstance import TestInstance
-from twisterlib.testplan import change_skip_to_error_if_integration
-from twisterlib.testsuite import TestSuite
+    from twister.twisterlib.jobserver import GNUMakeJobClient, GNUMakeJobServer, JobClient
 
 try:
     from yaml import CSafeLoader as SafeLoader
 except ImportError:
     from yaml import SafeLoader
 
-import expr_parser
-from anytree import Node, RenderTree
 
 logger = logging.getLogger('twister')
 

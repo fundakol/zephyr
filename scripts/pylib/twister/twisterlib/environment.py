@@ -20,15 +20,16 @@ from datetime import datetime, timezone
 from importlib import metadata
 from pathlib import Path
 
-import zephyr_module
-from twisterlib.constants import SUPPORTED_SIMS
-from twisterlib.coverage import supported_coverage_formats
-from twisterlib.error import TwisterRuntimeError
-from twisterlib.log_helper import log_command
+import zephyr_module  # type: ignore[import-not-found]
+
+from twister.twisterlib.constants import SUPPORTED_SIMS
+from twister.twisterlib.coverage import supported_coverage_formats
+from twister.twisterlib.error import TwisterRuntimeError
+from twister.twisterlib.log_helper import log_command
 
 logger = logging.getLogger('twister')
 
-ZEPHYR_BASE = os.getenv("ZEPHYR_BASE")
+ZEPHYR_BASE: str = os.getenv("ZEPHYR_BASE", "")
 if not ZEPHYR_BASE:
     sys.exit("$ZEPHYR_BASE environment variable undefined")
 
@@ -983,7 +984,7 @@ def parse_arguments(
         sys.exit(1)
 
     if options.size:
-        from twisterlib.size_calc import SizeCalculator
+        from twister.twisterlib.size_calc import SizeCalculator
         for fn in options.size:
             sc = SizeCalculator(fn, [])
             sc.size_report()
