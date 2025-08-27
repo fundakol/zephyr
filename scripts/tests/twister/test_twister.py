@@ -8,18 +8,17 @@ This test file contains foundational testcases for Twister tool
 """
 
 import os
-import sys
+from pathlib import Path
 from unittest import mock
+
 import pytest
 
-from pathlib import Path
+from twister import scl
+from twister.twisterlib.error import ConfigurationError
+from twister.twisterlib.testplan import TwisterConfigParser
 
-ZEPHYR_BASE = os.getenv("ZEPHYR_BASE")
-sys.path.insert(0, os.path.join(ZEPHYR_BASE, "scripts/pylib/twister"))
+ZEPHYR_BASE = os.getenv("ZEPHYR_BASE", "")
 
-import scl
-from twisterlib.error import ConfigurationError
-from twisterlib.testplan import TwisterConfigParser
 
 def test_yamlload():
     """ Test to check if loading the non-existent files raises the errors """

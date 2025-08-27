@@ -12,15 +12,19 @@ import os
 import pytest
 import sys
 
+if (ZEPHYR_BASE := os.getenv("ZEPHYR_BASE")) is None:
+    raise RuntimeError("$ZEPHYR_BASE environment variable undefined")
+
+# make all modules importable in the tests
+sys.path.insert(0, os.path.join(ZEPHYR_BASE, "scripts"))
+sys.path.insert(0, os.path.join(ZEPHYR_BASE, "scripts/pylib"))
+sys.path.insert(0, os.path.join(ZEPHYR_BASE, "scripts/tests"))
+sys.path.insert(0, os.path.join(ZEPHYR_BASE, "scripts/pytlib/pytest-twister-harness/src"))
+
 logging.getLogger("twister").setLevel("DEBUG")  # requires for testing twister
 
-ZEPHYR_BASE = os.getenv('ZEPHYR_BASE')
 TEST_DATA = os.path.join(ZEPHYR_BASE, 'scripts', 'tests',
                         'twister_blackbox', 'test_data')
-
-
-sys.path.insert(0, os.path.join(ZEPHYR_BASE, "scripts/pylib/twister"))
-sys.path.insert(0, os.path.join(ZEPHYR_BASE, "scripts"))
 
 
 sample_filename_mock = mock.PropertyMock(return_value='test_sample.yaml')

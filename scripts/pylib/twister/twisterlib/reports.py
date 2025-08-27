@@ -14,7 +14,8 @@ from enum import Enum
 from pathlib import Path
 
 from colorama import Fore
-from twisterlib.statuses import TwisterStatus
+
+from twister.twisterlib.statuses import TwisterStatus
 
 logger = logging.getLogger('twister')
 

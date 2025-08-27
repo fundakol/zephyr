@@ -6,19 +6,14 @@
 """
 This test file contains testsuites for the Harness classes of twister
 """
-from unittest import mock
-import sys
-import os
-import pytest
-import re
 import logging as logger
+import os
+import re
+from unittest import mock
 
-# ZEPHYR_BASE = os.getenv("ZEPHYR_BASE")
-from conftest import ZEPHYR_BASE
+import pytest
 
-sys.path.insert(0, os.path.join(ZEPHYR_BASE, "scripts/pylib/twister"))
-
-from twisterlib.harness import (
+from twister.twisterlib.harness import (
     Bsim,
     Console,
     Gtest,
@@ -29,9 +24,9 @@ from twisterlib.harness import (
     Robot,
     Test,
 )
-from twisterlib.statuses import TwisterStatus
-from twisterlib.testsuite import TestSuite
-from twisterlib.testinstance import TestInstance
+from twister.twisterlib.statuses import TwisterStatus
+from twister.twisterlib.testinstance import TestInstance
+from twister.twisterlib.testsuite import TestSuite
 
 GTEST_START_STATE = " RUN      "
 GTEST_PASS_STATE = "       OK "
@@ -793,7 +788,7 @@ def test_test_handle(
     mock_testsuite.compose_case_name.return_value = TestSuite.compose_case_name_(mock_testsuite, "testcase")
 
     outdir = tmp_path / "ztest_out"
-    with mock.patch('twisterlib.testsuite.TestSuite.get_unique', return_value="dummy_suite"):
+    with mock.patch('twister.twisterlib.testsuite.TestSuite.get_unique', return_value="dummy_suite"):
         instance = TestInstance(
             testsuite=mock_testsuite, platform=mock_platform, toolchain='zephyr', outdir=outdir
         )

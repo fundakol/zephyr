@@ -2,16 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
-import pytest
 import textwrap
-
-from unittest import mock
 from pathlib import Path
+from unittest import mock
 
-from twisterlib.harness import Pytest
-from twisterlib.testsuite import TestSuite
-from twisterlib.testinstance import TestInstance
-from twisterlib.platform import Platform
+import pytest
+
+from twister.twisterlib.harness import Pytest
+from twister.twisterlib.platform import Platform
+from twister.twisterlib.testinstance import TestInstance
+from twister.twisterlib.testsuite import TestSuite
 
 
 @pytest.fixture

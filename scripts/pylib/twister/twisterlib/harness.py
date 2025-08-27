@@ -19,13 +19,14 @@ from enum import Enum
 import junitparser.junitparser as junit
 import yaml
 from pytest import ExitCode
-from twisterlib.constants import SUPPORTED_SIMS_IN_PYTEST
-from twisterlib.environment import PYTEST_PLUGIN_INSTALLED, ZEPHYR_BASE
-from twisterlib.error import ConfigurationError, StatusAttributeError
-from twisterlib.handlers import Handler, terminate_process
-from twisterlib.reports import ReportStatus
-from twisterlib.statuses import TwisterStatus
-from twisterlib.testinstance import TestInstance
+
+from twister.twisterlib.constants import SUPPORTED_SIMS_IN_PYTEST
+from twister.twisterlib.environment import PYTEST_PLUGIN_INSTALLED, ZEPHYR_BASE
+from twister.twisterlib.error import ConfigurationError, StatusAttributeError
+from twister.twisterlib.handlers import Handler, terminate_process
+from twister.twisterlib.reports import ReportStatus
+from twister.twisterlib.statuses import TwisterStatus
+from twister.twisterlib.testinstance import TestInstance
 
 logger = logging.getLogger('twister')
 

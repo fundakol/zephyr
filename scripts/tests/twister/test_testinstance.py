@@ -7,23 +7,19 @@
 Tests for testinstance class
 """
 
-from contextlib import nullcontext
 import os
-import sys
-import pytest
+from contextlib import nullcontext
 from unittest import mock
 
-ZEPHYR_BASE = os.getenv("ZEPHYR_BASE")
-sys.path.insert(0, os.path.join(ZEPHYR_BASE, "scripts/pylib/twister"))
+import pytest
 
-from pylib.twister.twisterlib.platform import Simulator
-from twisterlib.statuses import TwisterStatus
-from twisterlib.testinstance import TestInstance
-from twisterlib.error import BuildError
-from twisterlib.runner import TwisterRunner
-from twisterlib.handlers import QEMUHandler
-from expr_parser import reserved
-
+from twister.expr_parser import reserved
+from twister.twisterlib.error import BuildError
+from twister.twisterlib.handlers import QEMUHandler
+from twister.twisterlib.platform import Simulator
+from twister.twisterlib.runner import TwisterRunner
+from twister.twisterlib.statuses import TwisterStatus
+from twister.twisterlib.testinstance import TestInstance
 
 TESTDATA_PART_1 = [
     (False, False, "console", None, "qemu", False, [], (False, True)),
@@ -586,7 +582,7 @@ def test_testinstance_calculate_sizes(testinstance, from_buildlog, expected_buil
     sc_mock = mock.Mock()
     mock_sc = mock.Mock(return_value=sc_mock)
 
-    with mock.patch('twisterlib.testinstance.SizeCalculator', mock_sc):
+    with mock.patch('twister.twisterlib.testinstance.SizeCalculator', mock_sc):
         res = testinstance.calculate_sizes(from_buildlog, expected_warning)
 
     assert res == sc_mock
