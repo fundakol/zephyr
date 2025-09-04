@@ -7,7 +7,6 @@ Blackbox tests for twister's command line functions
 """
 # pylint: disable=duplicate-code
 
-import importlib
 from unittest import mock
 import os
 import pytest
@@ -16,9 +15,9 @@ import sys
 import time
 
 # pylint: disable=no-name-in-module
-from conftest import TEST_DATA, ZEPHYR_BASE, suite_filename_mock, clear_log_in_test
+from conftest import TEST_DATA, suite_filename_mock, clear_log_in_test
 from twisterlib.testplan import TestPlan
-
+from twisterlib.twister_main import main as twister_main
 
 @mock.patch.object(TestPlan, 'TESTSUITE_FILENAME', suite_filename_mock)
 class TestRunner:
@@ -176,17 +175,6 @@ class TestRunner:
         ),
     ]
 
-    @classmethod
-    def setup_class(cls):
-        apath = os.path.join(ZEPHYR_BASE, 'scripts', 'twister')
-        cls.loader = importlib.machinery.SourceFileLoader('__main__', apath)
-        cls.spec = importlib.util.spec_from_loader(cls.loader.name, cls.loader)
-        cls.twister_module = importlib.util.module_from_spec(cls.spec)
-
-    @classmethod
-    def teardown_class(cls):
-        pass
-
     @pytest.mark.parametrize(
         'test_path, test_platforms, expected',
         TESTDATA_1,
@@ -205,9 +193,7 @@ class TestRunner:
                    ['-p'] * len(test_platforms), test_platforms
                ) for val in pair]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-            pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        return_value = twister_main(args)
 
         built_regex = r'^INFO    - (?P<executed_on_platform>[0-9]+)' \
                       r' test configurations executed on platforms, (?P<only_built>[0-9]+)' \
@@ -225,7 +211,7 @@ class TestRunner:
         assert int(built_search.group('only_built')) == \
                expected['only_built']
 
-        assert str(sys_exit.value) == '0'
+        assert return_value == 0
 
     @pytest.mark.parametrize(
         'test_path, test_platforms, expected',
@@ -241,9 +227,7 @@ class TestRunner:
                 ['-p'] * len(test_platforms), test_platforms
             ) for val in pair]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-            pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        twister_main(args)
 
         capfd.readouterr()
 
@@ -254,9 +238,7 @@ class TestRunner:
                 ['-p'] * len(test_platforms), test_platforms
             ) for val in pair]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-            pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        return_value = twister_main(args)
 
 
         select_regex = r'^INFO    - (?P<test_scenarios>[0-9]+) test scenarios' \
@@ -345,7 +327,7 @@ class TestRunner:
         assert int(built_search.group('only_built')) == \
                expected['only_built']
 
-        assert str(sys_exit.value) == '0'
+        assert return_value == 0
 
     @pytest.mark.parametrize(
         'test_path, test_platforms',
@@ -364,15 +346,13 @@ class TestRunner:
                    ['-p'] * len(test_platforms), test_platforms
                ) for val in pair]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-            pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        return_value = twister_main(args)
 
         out, err = capfd.readouterr()
         sys.stdout.write(out)
         sys.stderr.write(err)
 
-        assert str(sys_exit.value) == '0'
+        assert return_value == 0
 
     @pytest.mark.parametrize(
         'test_path, test_platforms, expected',
@@ -387,9 +367,7 @@ class TestRunner:
                    ['-p'] * len(test_platforms), test_platforms
                ) for val in pair]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-            pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        return_value = twister_main(args)
 
         out, err = capfd.readouterr()
         sys.stdout.write(out)
@@ -418,7 +396,7 @@ class TestRunner:
         assert int(built_search.group('only_built')) == \
                expected['only_built']
 
-        assert str(sys_exit.value) == '0'
+        assert return_value == 0
 
     @pytest.mark.parametrize(
         'test_path, test_platforms, file_name',
@@ -433,15 +411,13 @@ class TestRunner:
                    ['-p'] * len(test_platforms), test_platforms
                ) for val in pair]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-            pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        return_value = twister_main(args)
 
         out, err = capfd.readouterr()
         sys.stdout.write(out)
         sys.stderr.write(err)
 
-        assert str(sys_exit.value) == '0'
+        assert return_value == 0
 
     @pytest.mark.parametrize(
         'test_path, test_platforms',
@@ -456,15 +432,13 @@ class TestRunner:
                    ['-p'] * len(test_platforms), test_platforms
                ) for val in pair]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-            pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        return_value = twister_main(args)
 
         out, err = capfd.readouterr()
         sys.stdout.write(out)
         sys.stderr.write(err)
 
-        assert str(sys_exit.value) == '0'
+        assert return_value == 0
 
     @pytest.mark.parametrize(
         'test_path, test_platforms, iterations',
@@ -480,9 +454,7 @@ class TestRunner:
                    ['-p'] * len(test_platforms), test_platforms
                ) for val in pair]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-            pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        return_value = twister_main(args)
 
         out, err = capfd.readouterr()
         sys.stdout.write(out)
@@ -500,7 +472,7 @@ class TestRunner:
         else:
             assert 'Pattern not found in the output'
 
-        assert str(sys_exit.value) == '1'
+        assert return_value == 1
 
     @pytest.mark.parametrize(
         'test_path, test_platforms, interval',
@@ -518,9 +490,7 @@ class TestRunner:
 
         start_time = time.time()
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-            pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        return_value = twister_main(args)
 
         out, err = capfd.readouterr()
         sys.stdout.write(out)
@@ -531,7 +501,7 @@ class TestRunner:
         if elapsed_time < int(interval):
             assert 'interval was too short'
 
-        assert str(sys_exit.value) == '1'
+        assert return_value == 1
 
     @pytest.mark.parametrize(
         'test_path, test_platforms, timeout',
@@ -549,9 +519,7 @@ class TestRunner:
 
         tolerance = 1.0
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-            pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        return_value = twister_main(args)
 
         out, err = capfd.readouterr()
         sys.stdout.write(out)
@@ -561,7 +529,7 @@ class TestRunner:
         assert abs(
             elapsed_time - float(timeout) * 10) <= tolerance, f"Time is different from expected"
 
-        assert str(sys_exit.value) == '1'
+        assert return_value == 1
 
     @pytest.mark.parametrize(
         'test_path, test_platforms, tags, expected',
@@ -581,9 +549,7 @@ class TestRunner:
                    ['-t'] * len(tags), tags
                ) for val in pairs]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-            pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        return_value = twister_main(args)
 
         out, err = capfd.readouterr()
         sys.stdout.write(out)
@@ -592,7 +558,7 @@ class TestRunner:
         for line in expected:
             assert re.search(line, err), f"no expected:'{line}' in '{err}'"
 
-        assert str(sys_exit.value) == '0'
+        assert return_value == 0
 
     @pytest.mark.parametrize(
         'test_path, test_platforms, expected',
@@ -608,9 +574,7 @@ class TestRunner:
                 ['-p'] * len(test_platforms), test_platforms
             ) for val in pair]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-            pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        assert twister_main(args) == 0
 
         capfd.readouterr()
 
@@ -621,9 +585,7 @@ class TestRunner:
                 ['-p'] * len(test_platforms), test_platforms
             ) for val in pair]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-            pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        return_value = twister_main(args)
 
         select_regex = r'^INFO    - (?P<test_scenarios>[0-9]+) test scenarios' \
                        r' \((?P<test_instances>[0-9]+) configurations\) selected,' \
@@ -665,7 +627,7 @@ class TestRunner:
         assert int(pass_search.group('errored_configurations')) == \
                 expected['errored_configurations']
 
-        assert str(sys_exit.value) == '1'
+        assert return_value == 1
 
     @pytest.mark.parametrize(
         'test_path, test_platforms, iterations',
@@ -682,9 +644,7 @@ class TestRunner:
                    ['-p'] * len(test_platforms), test_platforms
                ) for val in pair]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-            pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        return_value = twister_main(args)
 
         out, err = capfd.readouterr()
         sys.stdout.write(out)
@@ -702,4 +662,4 @@ class TestRunner:
         else:
             assert 'Pattern not found in the output'
 
-        assert str(sys_exit.value) == '1'
+        assert return_value == 1

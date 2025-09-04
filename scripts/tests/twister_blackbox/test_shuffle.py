@@ -6,29 +6,18 @@
 Blackbox tests for twister's command line functions related to the shuffling of the test order.
 """
 
-import importlib
 from unittest import mock
 import os
 import pytest
-import sys
 import json
 
 # pylint: disable=no-name-in-module
-from conftest import ZEPHYR_BASE, TEST_DATA, suite_filename_mock
+from conftest import TEST_DATA, suite_filename_mock
 from twisterlib.testplan import TestPlan
+from twisterlib.twister_main import main as twister_main
 
 
 class TestShuffle:
-    @classmethod
-    def setup_class(cls):
-        apath = os.path.join(ZEPHYR_BASE, 'scripts', 'twister')
-        cls.loader = importlib.machinery.SourceFileLoader('__main__', apath)
-        cls.spec = importlib.util.spec_from_loader(cls.loader.name, cls.loader)
-        cls.twister_module = importlib.util.module_from_spec(cls.spec)
-
-    @classmethod
-    def teardown_class(cls):
-        pass
 
     @pytest.mark.parametrize(
         'seed, ratio, expected_order',
@@ -47,7 +36,7 @@ class TestShuffle:
         ids=['first half, 123', 'second half, 123', 'first half, 321', 'second half, 321',
              'first third, 123', 'middle third, 123', 'last third, 123',
              'first third, 321', 'middle third, 321', 'last third, 321'
-]
+             ]
     )
     @mock.patch.object(TestPlan, 'TESTSUITE_FILENAME', suite_filename_mock)
     def test_shuffle_tests(self, out_path, seed, ratio, expected_order):
@@ -60,9 +49,7 @@ class TestShuffle:
                    ['-p'] * len(test_platforms), test_platforms
                ) for val in pair]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-                pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        return_value = twister_main(args)
 
         with open(os.path.join(out_path, 'testplan.json')) as f:
             j = json.load(f)
@@ -71,4 +58,4 @@ class TestShuffle:
 
         assert testsuites == expected_order
 
-        assert str(sys_exit.value) == '0'
+        assert return_value == 0

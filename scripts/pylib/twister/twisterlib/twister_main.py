@@ -244,7 +244,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser = add_parse_arguments()
         options = parse_arguments(parser, argv)
         default_options = parse_arguments(parser, [], on_init=False)
-        return twister(options, default_options)
+        try:
+            return twister(options, default_options)
+        except SystemExit as exc:
+            return exc.code
     finally:
         close_logging()
         if (os.name != "nt") and os.isatty(1):

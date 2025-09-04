@@ -6,17 +6,17 @@
 Blackbox tests for twister's command line functions - simple does-error-out or not tests
 """
 
-import importlib
-from unittest import mock
 import os
-import pytest
-import sys
 import re
+import sys
+from unittest import mock
 
+import pytest
 # pylint: disable=no-name-in-module
-from conftest import ZEPHYR_BASE, TEST_DATA, suite_filename_mock
-from twisterlib.testplan import TestPlan
+from conftest import TEST_DATA, suite_filename_mock
 from twisterlib.error import TwisterRuntimeError
+from twisterlib.testplan import TestPlan
+from twisterlib.twister_main import main as twister_main
 
 
 class TestError:
@@ -26,7 +26,7 @@ class TestError:
             os.path.join('scripts', 'tests', 'twister_blackbox', 'test_data', 'tests',
                          'dummy', 'agnostic', 'group1', 'subgroup1',
                          'dummy.agnostic.group1.subgroup1'),
-            SystemExit
+            None
         ),
         (
             None,
@@ -36,7 +36,7 @@ class TestError:
         (
             os.path.join(TEST_DATA, 'tests', 'dummy'),
             'dummy.agnostic.group1.subgroup1',
-            SystemExit
+            None
         )
     ]
     TESTDATA_2 = [
@@ -49,17 +49,6 @@ class TestError:
             r'always_overflow.dummy ERROR Build failure \(build <zephyr>\)'
         )
     ]
-
-    @classmethod
-    def setup_class(cls):
-        apath = os.path.join(ZEPHYR_BASE, 'scripts', 'twister')
-        cls.loader = importlib.machinery.SourceFileLoader('__main__', apath)
-        cls.spec = importlib.util.spec_from_loader(cls.loader.name, cls.loader)
-        cls.twister_module = importlib.util.module_from_spec(cls.spec)
-
-    @classmethod
-    def teardown_class(cls):
-        pass
 
     @pytest.mark.parametrize(
         'testroot, test, expected_exception',
@@ -77,13 +66,11 @@ class TestError:
                    ['-p'] * len(test_platforms), test_platforms
                ) for val in pair]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-                pytest.raises(expected_exception) as exc:
-            self.loader.exec_module(self.twister_module)
-
-        if expected_exception == SystemExit:
-            assert str(exc.value) == '0'
-        assert True
+        if expected_exception:
+            with pytest.raises(expected_exception):
+                twister_main(args)
+        else:
+            assert twister_main(args) == 0
 
     @pytest.mark.parametrize(
         'switch, expected',
@@ -106,9 +93,7 @@ class TestError:
         if switch:
             args += [switch]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-            pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        return_value = twister_main(args)
 
         out, err = capfd.readouterr()
         sys.stdout.write(out)
@@ -116,8 +101,8 @@ class TestError:
 
         print(args)
         if switch:
-            assert str(sys_exit.value) == '1'
+            assert return_value == 1
         else:
-            assert str(sys_exit.value) == '0'
+            assert return_value == 0
 
         assert re.search(expected, err)

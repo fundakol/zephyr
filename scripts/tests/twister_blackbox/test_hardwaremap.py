@@ -5,7 +5,6 @@
 """
 Blackbox tests for twister's command line functions
 """
-import importlib
 from unittest import mock
 import os
 import pytest
@@ -14,8 +13,8 @@ import sys
 # pylint: disable=no-name-in-module
 from conftest import ZEPHYR_BASE, suite_filename_mock, clear_log_in_test
 from twisterlib.testplan import TestPlan
+from twisterlib.twister_main import main as twister_main
 
-sys.path.insert(0, os.path.join(ZEPHYR_BASE, "scripts/pylib/twister/twisterlib"))
 
 @mock.patch.object(TestPlan, 'TESTSUITE_FILENAME', suite_filename_mock)
 class TestHardwaremap:
@@ -94,17 +93,6 @@ class TestHardwaremap:
         )
     ]
 
-    @classmethod
-    def setup_class(cls):
-        apath = os.path.join(ZEPHYR_BASE, 'scripts', 'twister')
-        cls.loader = importlib.machinery.SourceFileLoader('__main__', apath)
-        cls.spec = importlib.util.spec_from_loader(cls.loader.name, cls.loader)
-        cls.twister_module = importlib.util.module_from_spec(cls.spec)
-
-    @classmethod
-    def teardown_class(cls):
-        pass
-
     @pytest.mark.parametrize(
         ('manufacturer', 'product', 'serial', 'runner'),
         TESTDATA_1,
@@ -129,11 +117,9 @@ class TestHardwaremap:
         for id_man in manufacturer:
             for id_pro in product:
                 for id_serial in serial:
-                    with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-                            mock.patch('serial.tools.list_ports.comports',
-                                       side_effect=mocked_comports), \
-                            pytest.raises(SystemExit) as sys_exit:
-                        self.loader.exec_module(self.twister_module)
+                    with mock.patch('serial.tools.list_ports.comports',
+                        side_effect=mocked_comports):
+                        return_value = twister_main(args)
 
                     out, err = capfd.readouterr()
                     sys.stdout.write(out)
@@ -154,7 +140,7 @@ class TestHardwaremap:
                     if os.path.exists(path):
                         os.remove(path)
 
-                    assert str(sys_exit.value) == '0'
+                    assert return_value == 0
                     clear_log_in_test()
 
     @pytest.mark.parametrize(
@@ -193,11 +179,8 @@ class TestHardwaremap:
                           )
             ]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-                mock.patch('serial.tools.list_ports.comports',
-                           side_effect=mocked_comports), \
-                pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        with mock.patch('serial.tools.list_ports.comports', side_effect=mocked_comports):
+            return_value = twister_main(args)
 
         out, err = capfd.readouterr()
         sys.stdout.write(out)
@@ -236,7 +219,7 @@ class TestHardwaremap:
         if os.path.exists(path):
             os.remove(path)
 
-        assert str(sys_exit.value) == '0'
+        assert return_value == 0
 
     @pytest.mark.parametrize(
         ('manufacturer', 'product', 'serial', 'location'),
@@ -260,11 +243,8 @@ class TestHardwaremap:
                           )
             ]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-                mock.patch('serial.tools.list_ports.comports',
-                           side_effect=mocked_comports), \
-                pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        with mock.patch('serial.tools.list_ports.comports', side_effect=mocked_comports):
+            return_value = twister_main(args)
 
         out, err = capfd.readouterr()
         sys.stdout.write(out)
@@ -288,4 +268,4 @@ class TestHardwaremap:
         if os.path.exists(path):
             os.remove(path)
 
-        assert str(sys_exit.value) == '0'
+        assert return_value == 0

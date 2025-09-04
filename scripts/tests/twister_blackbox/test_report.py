@@ -6,7 +6,6 @@
 Blackbox tests for twister's command line functions
 """
 
-import importlib
 import json
 from unittest import mock
 import os
@@ -20,6 +19,7 @@ import xml.etree.ElementTree as etree
 from conftest import TEST_DATA, ZEPHYR_BASE, suite_filename_mock, clear_log_in_test
 from twisterlib.statuses import TwisterStatus
 from twisterlib.testplan import TestPlan
+from twisterlib.twister_main import main as twister_main
 
 
 @mock.patch.object(TestPlan, 'TESTSUITE_FILENAME', suite_filename_mock)
@@ -118,17 +118,6 @@ class TestReport:
         )
     ]
 
-    @classmethod
-    def setup_class(cls):
-        apath = os.path.join(ZEPHYR_BASE, 'scripts', 'twister')
-        cls.loader = importlib.machinery.SourceFileLoader('__main__', apath)
-        cls.spec = importlib.util.spec_from_loader(cls.loader.name, cls.loader)
-        cls.twister_module = importlib.util.module_from_spec(cls.spec)
-
-    @classmethod
-    def teardown_class(cls):
-        pass
-
     @pytest.mark.parametrize(
         'test_path, test_platforms, file_name',
         TESTDATA_1,
@@ -142,9 +131,7 @@ class TestReport:
                    ['-p'] * len(test_platforms), test_platforms
                ) for val in pair]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-                pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        return_value = twister_main(args)
 
         out, err = capfd.readouterr()
         sys.stdout.write(out)
@@ -176,7 +163,7 @@ class TestReport:
             platform_path = os.path.join(out_path, f_platform.replace("/", "_") + ".json", )
             assert os.path.exists(platform_path), f'file not found {f_platform}'
 
-        assert str(sys_exit.value) == '0'
+        assert return_value == 0
 
     @pytest.mark.parametrize(
         'test_path, test_platforms, file_name',
@@ -191,9 +178,7 @@ class TestReport:
                    ['-p'] * len(test_platforms), test_platforms
                ) for val in pair]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-                pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        return_value = twister_main(args)
 
         out, err = capfd.readouterr()
         sys.stdout.write(out)
@@ -203,7 +188,7 @@ class TestReport:
             path = os.path.join(out_path, f_name)
             assert os.path.exists(path), f'file not found {f_name}'
 
-        assert str(sys_exit.value) == '0'
+        assert return_value == 0
 
     @pytest.mark.parametrize(
         'test_path, test_platforms, report_arg, file_name',
@@ -223,9 +208,7 @@ class TestReport:
                    report_arg
                ) for val in pair]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-                pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        return_value = twister_main(args)
 
         out, err = capfd.readouterr()
         sys.stdout.write(out)
@@ -235,7 +218,7 @@ class TestReport:
             path = os.path.join(out_path, f_name)
             assert os.path.exists(path), f'file not found {f_name}'
 
-        assert str(sys_exit.value) == '0'
+        assert return_value == 0
 
     @pytest.mark.parametrize(
         'test_path, test_platforms, file_name, dir_name',
@@ -255,9 +238,7 @@ class TestReport:
             shutil.rmtree(twister_path)
 
         try:
-            with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-                    pytest.raises(SystemExit) as sys_exit:
-                self.loader.exec_module(self.twister_module)
+            return_value = twister_main(args)
 
             out, err = capfd.readouterr()
             sys.stdout.write(out)
@@ -267,7 +248,7 @@ class TestReport:
                 path = os.path.join(twister_path, f_name)
                 assert os.path.exists(path), f'file not found {f_name}'
 
-            assert str(sys_exit.value) == '0'
+            assert return_value == 0
         finally:
             twister_path = os.path.join(ZEPHYR_BASE, dir_name)
             if os.path.exists(twister_path):
@@ -291,9 +272,7 @@ class TestReport:
         if os.path.exists(twister_path):
             shutil.rmtree(twister_path)
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-                pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        return_value = twister_main(args)
 
         out, err = capfd.readouterr()
         sys.stdout.write(out)
@@ -308,7 +287,7 @@ class TestReport:
                 platform_path = os.path.join(twister_path, f_platform.replace("/", "_"))
                 assert os.path.exists(platform_path), f'file not found {f_platform}'
 
-            assert str(sys_exit.value) == '0'
+            assert return_value == 0
         finally:
             twister_path = os.path.join(ZEPHYR_BASE, dir_name)
             if os.path.exists(twister_path):
@@ -331,9 +310,7 @@ class TestReport:
         if os.path.exists(file_path):
             os.remove(file_path)
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-                pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        return_value = twister_main(args)
 
         out, err = capfd.readouterr()
         sys.stdout.write(out)
@@ -341,7 +318,7 @@ class TestReport:
 
         assert os.path.exists(file_path), 'file not found {f_name}'
 
-        assert str(sys_exit.value) == '0'
+        assert return_value == 0
 
     @pytest.mark.parametrize(
         'test_path, flags, expected_testcase_counts',
@@ -367,11 +344,7 @@ class TestReport:
                    ['-p'] * len(test_platforms), test_platforms
                ) for val in pair]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-                pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
-
-        assert str(sys_exit.value) == '0'
+        assert twister_main(args) == 0
 
         testsuite_counter = 0
         xml_data = etree.parse(os.path.join(out_path, 'twister_report.xml')).getroot()
@@ -403,11 +376,7 @@ class TestReport:
                    ['-p'] * len(test_platforms), test_platforms
                ) for val in pair]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-                pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
-
-        assert str(sys_exit.value) == '0'
+        assert twister_main(args) == 0
 
         with open(os.path.join(out_path, 'twister.json')) as f:
             j = json.load(f)
@@ -428,11 +397,7 @@ class TestReport:
                    ['-p'] * len(test_platforms), test_platforms
                ) for val in pair]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-                pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
-
-        assert str(sys_exit.value) == '0'
+        assert twister_main(args) == 0
 
         with open(os.path.join(out_path, 'twister.json')) as f:
             j = json.load(f)
@@ -469,11 +434,7 @@ class TestReport:
                    ['-p'] * len(test_platforms), test_platforms
                ) for val in pair]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-                pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
-
-        assert str(sys_exit.value) == '1'
+        assert twister_main(args) == 1
 
         capfd.readouterr()
 
@@ -481,9 +442,7 @@ class TestReport:
 
         args += ['--report-summary']
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-                pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        assert twister_main(args) == 0
 
         out, err = capfd.readouterr()
         sys.stdout.write(out)
@@ -503,9 +462,7 @@ class TestReport:
                    ['-p'] * len(test_platforms), test_platforms
                ) for val in pair]
 
-        with mock.patch.object(sys, 'argv', [sys.argv[0]] + args), \
-                pytest.raises(SystemExit) as sys_exit:
-            self.loader.exec_module(self.twister_module)
+        assert twister_main(args) == 0
 
         out, err = capfd.readouterr()
         sys.stdout.write(out)
