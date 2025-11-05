@@ -1,0 +1,17 @@
+[project]
+name = "display-twister-harness"
+version = "0.0.0"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy==1.26.4",
+  "opencv-python==4.9.0.80",
+  "pyyaml>=5.4",
+]
+# dynamic = ["dependencies"]
+
+# [build-system]
+# requires = ["setuptools>=48.0.0"]
+# build-backend = "setuptools.build_meta"
+
+# [tool.setuptools.dynamic]
+# dependencies = { file = ["camera_shields/requirements.txt"] }

@@ -1,0 +1,22 @@
+[project]
+name = "domains"
+version = "1.0.0"
+requires-python = ">=3.10"
+dependencies = ["pykwalify"]
+
+# [build-system]
+# requires = ["uv_build>=0.9.6"]
+# build-backend = "uv_build"
+# # requires = ["hatchling"]
+# # build-backend = "hatchling.build"
+
+# [tool.hatch.build.targets.wheel]
+# # packages = ["domains"]
+# # include = ["domains.py"]
+# # sources = ["."]
+
+# [tool.uv.build-backend]
+# # module-name = "domains"
+# module-root = "."
+# namespace = true
+# source-include = ["domains.py"]
