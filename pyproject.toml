@@ -1,14 +1,17 @@
 [project]
 name = "zephyr"
-version = "1.0.0"
+version = "0"
 description = "Zephyr Python's scripts"
 requires-python = ">=3.10"
-dependencies = ["west"]
+dependencies = [
+  "west>=1.4.0",
+]
 
 [project.optional-dependencies]
 dev = [
   "nox>=2025.10.16",
   "pytest-xdist>=3.8.0",
+  "rust-just>=1.43.0",
 ]
 lint = [
   "pre-commit>=4.3.0",
