@@ -1,6 +1,33 @@
-[build-system]
-build-backend = "setuptools.build_meta"
-requires = [
-    "setuptools >= 48.0.0",
-    "wheel",
+[project]
+name = "pytest-twister-harness"
+version = "0.0.0"
+description = "Plugin for pytest to run tests which require interaction with real and simulated devices"
+readme = "README.rst"
+requires-python = ">=3.8"
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: Posix :: Linux",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Software Development :: Embedded Systems",
+  "Topic :: Software Development :: Quality Assurance",
 ]
+dependencies = ["psutil", "pyserial", "pytest>=7.0.0"]
+# dynamic = ["version"]
+
+[project.entry-points.pytest11]
+twister_harness = "twister_harness.plugin"
+
+[build-system]
+requires = ["setuptools>=48.0.0"]
+build-backend = "setuptools.build_meta"
+
+# [tool.setuptools.dynamic]
+# version = { attr = "twister_harness.__version__" }
