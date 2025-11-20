@@ -1,0 +1,41 @@
+[project]
+name = "zephyr"
+version = "0"
+description = "Zephyr Python's scripts"
+requires-python = ">=3.10"
+dependencies = [
+  "west>=1.4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "nox>=2025.10.16",
+  "pytest-xdist>=3.8.0",
+  "rust-just>=1.43.0",
+]
+lint = [
+  "pre-commit>=4.3.0",
+  "ruff>=0.14.3",
+]
+
+[tool.pyright]
+include = ["scripts"]
+extraPaths = [
+  "scripts",
+  "scripts/pylib/twister",
+  "scripts/pylib/display-twister-harness",
+  "scripts/pylib/shell-twister-harness",
+  "scripts/pylib/pytest-twister-harness/src",
+  "scripts/dts/python-devicetreesrc",
+  "scripts/pylib/build_helpers"
+]
+
+[tool.uv.workspace]
+members = [
+  "scripts/pylib",  # twister
+  "scripts/pylib/build_helpers",
+  "scripts/pylib/display-twister-harness",
+  "scripts/pylib/power-twister-harness",
+  "scripts/pylib/pytest-twister-harness",
+  "scripts/dts/python-devicetree",
+]
