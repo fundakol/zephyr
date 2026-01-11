@@ -1,0 +1,22 @@
+[project]
+name = "devicetree"
+version = "0.0.2"
+description = "Python libraries for devicetree"
+readme = "README.rst"
+requires-python = ">=3.6"
+authors = [{ name = "Zephyr Project", email = "devel@lists.zephyrproject.org" }]
+classifiers = [
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: MacOS :: MacOS X",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3 :: Only",
+]
+dependencies = ["PyYAML>=6.0"]
+
+[project.urls]
+Homepage = "https://github.com/zephyrproject-rtos/python-devicetree"
+
+[build-system]
+requires = ["setuptools>=48.0.0"]
+build-backend = "setuptools.build_meta"
