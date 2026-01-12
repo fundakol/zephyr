@@ -99,3 +99,8 @@ west-commands:
       - name: gtags
         class: Gtags
         help: create a GNU global tags file for the current workspace
+  - file: scripts/west_commands/uv_sync.py
+    commands:
+      - name: uv_sync
+        class: UvSync
+        help: Update the project's environment
