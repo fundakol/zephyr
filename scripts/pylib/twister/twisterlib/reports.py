@@ -13,9 +13,12 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from platform import system as platform_system
+from typing import Any
 
 from colorama import Fore
+from twisterlib.environment import TwisterEnv
 from twisterlib.statuses import TwisterStatus
+from twisterlib.testinstance import TestInstance
 
 logger = logging.getLogger('twister')
 
@@ -30,47 +33,22 @@ class ReportStatus(str, Enum):
 
 
 class ReportingJSONEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Path):
-            return str(obj)
-        return super().default(obj)
+    def default(self, o):
+        if isinstance(o, Path):
+            return str(o)
+        return super().default(o)
 
 
-class Reporting:
+class XUnitXMLReport:
+    """Create a report from tests results in XUnit format."""
 
-    json_filters = {
-        'twister.json': {
-            'deny_suite': ['footprint']
-        },
-        'footprint.json': {
-            'deny_status': ['FILTER'],
-            'deny_suite': ['testcases', 'execution_time', 'recording', 'retries', 'runnable']
-        }
-    }
-
-    def __init__(self, plan, env) -> None:
-        self.plan = plan #FIXME
-        self.instances = plan.instances
-        self.platforms = plan.platforms
-        self.selected_platforms = plan.selected_platforms
+    def __init__(
+        self, env: TwisterEnv, instances: dict[str, TestInstance], selected_platforms: list
+    ) -> None:
         self.env = env
+        self.instances = instances
+        self.selected_platforms = selected_platforms
         self.timestamp = datetime.now().isoformat()
-        self.outdir = os.path.abspath(env.options.outdir)
-        self.instance_fail_count = plan.instance_fail_count
-        self.footprint = None
-        self.coverage_status = None
-
-
-    @staticmethod
-    def process_log(log_file):
-        filtered_string = ""
-        if os.path.exists(log_file):
-            with open(log_file, "rb") as f:
-                log = f.read().decode("utf-8")
-                filtered_string = ''.join(filter(lambda x: x in string.printable, log))
-
-        return filtered_string
-
 
     @staticmethod
     def xunit_testcase(
@@ -92,7 +70,8 @@ class Reporting:
             duration = 0
 
         eleTestcase = ET.SubElement(
-            eleTestsuite, "testcase",
+            eleTestsuite,
+            "testcase",
             classname=classname,
             name=f"{name}",
             time=f"{duration}")
@@ -137,13 +116,12 @@ class Reporting:
 
         return (fails, passes, errors, skips)
 
-    # Generate a report with all testsuites instead of doing this per platform
-    def xunit_report_suites(self, json_file, filename):
+    def create_with_all_testsuites(self, json_file: str | Path, filename: str | Path):
+        """Generate a report with all testsuites instead of doing this per platform."""
 
         json_data = {}
         with open(json_file) as json_results:
             json_data = json.load(json_results)
-
 
         env = json_data.get('environment', {})
         version = env.get('zephyr_version', None)
@@ -160,12 +138,17 @@ class Reporting:
 
         for suite in suites_to_report:
             duration = 0
-            eleTestsuite = ET.SubElement(eleTestsuites, 'testsuite',
-                                            name=suite.get("name"), time="0",
-                                            timestamp = self.timestamp,
-                                            tests="0",
-                                            failures="0",
-                                            errors="0", skipped="0")
+            eleTestsuite = ET.SubElement(
+                eleTestsuites,
+                'testsuite',
+                name=suite.get("name"),
+                time="0",
+                timestamp = self.timestamp,
+                tests="0",
+                failures="0",
+                errors="0",
+                skipped="0"
+            )
             eleTSPropetries = ET.SubElement(eleTestsuite, 'properties')
             # Multiple 'property' can be added to 'properties'
             # differing by name and value
@@ -204,7 +187,13 @@ class Reporting:
         with open(filename, 'wb') as report:
             report.write(result)
 
-    def xunit_report(self, json_file, filename, selected_platform=None, full_report=False):
+    def create(
+        self, json_file: str | Path,
+        filename: str | Path,
+        selected_platform: str | None = None,
+        full_report: bool = False
+    ):
+        """Create XUnit report from a json file."""
         if selected_platform:
             selected = [selected_platform]
             logger.info(f"Writing target report for {selected_platform}...")
@@ -215,7 +204,6 @@ class Reporting:
         json_data = {}
         with open(json_file) as json_results:
             json_data = json.load(json_results)
-
 
         env = json_data.get('environment', {})
         version = env.get('zephyr_version', None)
@@ -234,13 +222,15 @@ class Reporting:
                     continue
 
             duration = 0
-            eleTestsuite = ET.SubElement(eleTestsuites, 'testsuite',
-                                            name=platform,
-                                            timestamp = self.timestamp,
-                                            time="0",
-                                            tests="0",
-                                            failures="0",
-                                            errors="0", skipped="0")
+            eleTestsuite = ET.SubElement(eleTestsuites,
+                'testsuite',
+                name=platform,
+                timestamp = self.timestamp,
+                time="0",
+                tests="0",
+                failures="0",
+                errors="0", skipped="0"
+            )
             eleTSPropetries = ET.SubElement(eleTestsuite, 'properties')
             # Multiple 'property' can be added to 'properties'
             # differing by name and value
@@ -294,7 +284,21 @@ class Reporting:
         with open(filename, 'wb') as report:
             report.write(result)
 
-    def json_report(self, filename, version="NA", platform=None, filters=None):
+
+class JsonReport:
+    """Create a report from tests results in JSON format."""
+
+    def __init__(self, env: TwisterEnv, instances: dict[str, TestInstance]) -> None:
+        self.env = env
+        self.instances = instances
+
+    def create(
+        self, filename: str | Path,
+        version: str = "NA",
+        platform: str | None = None,
+        filters: dict[str, Any] | None = None
+    ):
+        """Create Json report and save in a file."""
         logger.info(f"Writing JSON report {filename}")
 
         if self.env.options.report_all_options:
@@ -303,13 +307,14 @@ class Reporting:
             report_options = self.env.non_default_options()
 
         report = {}
-        report["environment"] = {"os": platform_system(),
-                                 "zephyr_version": version,
-                                 "toolchain": self.env.toolchain,
-                                 "commit_date": self.env.commit_date,
-                                 "run_date": self.env.run_date,
-                                 "options": report_options
-                                 }
+        report["environment"] = {
+            "os": platform_system(),
+            "zephyr_version": version,
+            "toolchain": self.env.toolchain,
+            "commit_date": self.env.commit_date,
+            "run_date": self.env.run_date,
+            "options": report_options
+        }
         suites = []
 
         for instance in self.instances.values():
@@ -382,7 +387,7 @@ class Reporting:
                 else:
                     suite["log"] = self.process_log(build_log)
 
-                suite["reason"] = self.get_detailed_reason(instance.reason, suite["log"])
+                suite["reason"] = self.get_detailed_reason(instance.reason, suite["log"])  # type: ignore
                 # update the reason to get more details also in other reports (e.g. junit)
                 # where build log is not available
                 instance.reason = suite["reason"]
@@ -493,6 +498,96 @@ class Reporting:
         with open(filename, 'w') as json_file:
             json.dump(report, json_file, indent=4, separators=(',',':'), cls=ReportingJSONEncoder)
 
+    @staticmethod
+    def process_log(log_file: str | Path):
+        filtered_string = ""
+        if os.path.exists(log_file):
+            with open(log_file, "rb") as f:
+                log = f.read().decode("utf-8")
+                filtered_string = ''.join(filter(lambda x: x in string.printable, log))
+
+        return filtered_string
+
+    def get_detailed_reason(self, reason: str, log: str) -> str:
+        if reason == 'CMake build failure':
+            if error_key := self._parse_cmake_build_failure(log):
+                return f"{reason} - {error_key}"
+        elif reason == 'Build failure':  # noqa SIM102
+            if error_key := self._parse_build_failure(log):
+                return f"{reason} - {error_key}"
+        return reason
+
+    @staticmethod
+    def _parse_cmake_build_failure(log: str) -> str | None:
+        last_warning = 'no warning found'
+        lines = log.splitlines()
+        for i, line in enumerate(lines):
+            if "warning: " in line:
+                last_warning = line
+            elif "devicetree error: " in line:
+                return "devicetree error"
+            elif "fatal error: " in line:
+                return line[line.index('fatal error: ') :].strip()
+            elif "error: " in line:  # error: Aborting due to Kconfig warnings
+                if "undefined symbol" in last_warning:
+                    return last_warning[last_warning.index('undefined symbol') :].strip()
+                return last_warning
+            elif "CMake Error at" in line:
+                for next_line in lines[i + 1 :]:
+                    if next_line.strip():
+                        return line + ' ' + next_line
+                return line
+        return None
+
+    @staticmethod
+    def _parse_build_failure(log: str) -> str | None:
+        last_warning = ''
+        lines = log.splitlines()
+        for i, line in enumerate(lines):
+            if "undefined reference" in line:
+                return line[line.index('undefined reference') :].strip()
+            elif "error: ld returned" in line:
+                if last_warning:
+                    return last_warning
+                elif "overflowed by" in lines[i - 1]:
+                    return "ld.bfd: region overflowed"
+                elif "ld.bfd: warning: " in lines[i - 1]:
+                    return "ld.bfd:" + lines[i - 1].split("ld.bfd:", 1)[-1]
+                return line
+            elif "error: " in line:
+                return line[line.index('error: ') :].strip()
+            elif ": in function " in line:
+                last_warning = line[line.index('in function') :].strip()
+            elif "CMake Error at" in line:
+                for next_line in lines[i + 1 :]:
+                    if next_line.strip():
+                        return line + ' ' + next_line
+                return line
+        return None
+
+
+class Reporting:
+
+    json_filters = {
+        'twister.json': {
+            'deny_suite': ['footprint']
+        },
+        'footprint.json': {
+            'deny_status': ['FILTER'],
+            'deny_suite': ['testcases', 'execution_time', 'recording', 'retries', 'runnable']
+        }
+    }
+
+    def __init__(self, plan, env) -> None:
+        self.plan = plan # FIXME
+        self.instances = plan.instances
+        self.platforms = plan.platforms
+        self.selected_platforms = plan.selected_platforms
+        self.env = env
+        self.outdir = os.path.abspath(env.options.outdir)
+        self.instance_fail_count = plan.instance_fail_count
+        self.footprint = None
+        self.coverage_status = None
 
     def compare_metrics(self, filename):
         # name, datatype, lower results better
@@ -763,20 +858,27 @@ class Reporting:
         if suffix:
             filename = f"{filename}_{suffix}"
 
-        if not no_update:
-            json_file = filename + ".json"
-            self.json_report(json_file, version=self.env.version,
-                             filters=self.json_filters['twister.json'])
-            if self.env.options.footprint_report is not None:
-                self.json_report(filename + "_footprint.json", version=self.env.version,
-                                 filters=self.json_filters['footprint.json'])
-            self.xunit_report(json_file, filename + ".xml", full_report=False)
-            self.xunit_report(json_file, filename + "_report.xml", full_report=True)
-            self.xunit_report_suites(json_file, filename + "_suite_report.xml")
+        if no_update:
+            return
 
-            if platform_reports:
-                self.target_report(json_file, outdir, suffix)
+        json_file = filename + ".json"
+        json_report = JsonReport(self.env, self.instances)
+        json_report.create(
+            json_file, version=self.env.version, filters=self.json_filters['twister.json']
+        )
+        if self.env.options.footprint_report is not None:
+            json_report.create(
+                filename + "_footprint.json",
+                version=self.env.version,
+                filters=self.json_filters['footprint.json']
+            )
+        xunit_report = XUnitXMLReport(self.env, self.instances, self.selected_platforms)
+        xunit_report.create(json_file, filename + ".xml", full_report=False)
+        xunit_report.create(json_file, filename + "_report.xml", full_report=True)
+        xunit_report.create_with_all_testsuites(json_file, filename + "_suite_report.xml")
 
+        if platform_reports:
+            self.target_report(json_file, outdir, suffix)
 
     def target_report(self, json_file, outdir, suffix):
         platforms = {repr(inst.platform):inst.platform for _, inst in self.instances.items()}
@@ -787,68 +889,17 @@ class Reporting:
             else:
                 filename = os.path.join(outdir,f"{platform.normalized_name}.xml")
                 json_platform_file = os.path.join(outdir, platform.normalized_name)
-            self.xunit_report(json_file, filename, platform.name, full_report=True)
-            self.json_report(json_platform_file + ".json",
-                             version=self.env.version, platform=platform.name,
-                             filters=self.json_filters['twister.json'])
+            xunit_report = XUnitXMLReport(self.env, self.instances, self.selected_platforms)
+            xunit_report.create(json_file, filename, platform.name, full_report=True)
+            json_report = JsonReport(self.env, self.instances)
+            json_report.create(
+                json_platform_file + ".json",
+                version=self.env.version, platform=platform.name,
+                filters=self.json_filters['twister.json']
+            )
             if self.env.options.footprint_report is not None:
-                self.json_report(json_platform_file + "_footprint.json",
-                                 version=self.env.version, platform=platform.name,
-                                 filters=self.json_filters['footprint.json'])
-
-    def get_detailed_reason(self, reason: str, log: str) -> str:
-        if reason == 'CMake build failure':
-            if error_key := self._parse_cmake_build_failure(log):
-                return f"{reason} - {error_key}"
-        elif reason == 'Build failure':  # noqa SIM102
-            if error_key := self._parse_build_failure(log):
-                return f"{reason} - {error_key}"
-        return reason
-
-    @staticmethod
-    def _parse_cmake_build_failure(log: str) -> str | None:
-        last_warning = 'no warning found'
-        lines = log.splitlines()
-        for i, line in enumerate(lines):
-            if "warning: " in line:
-                last_warning = line
-            elif "devicetree error: " in line:
-                return "devicetree error"
-            elif "fatal error: " in line:
-                return line[line.index('fatal error: ') :].strip()
-            elif "error: " in line:  # error: Aborting due to Kconfig warnings
-                if "undefined symbol" in last_warning:
-                    return last_warning[last_warning.index('undefined symbol') :].strip()
-                return last_warning
-            elif "CMake Error at" in line:
-                for next_line in lines[i + 1 :]:
-                    if next_line.strip():
-                        return line + ' ' + next_line
-                return line
-        return None
-
-    @staticmethod
-    def _parse_build_failure(log: str) -> str | None:
-        last_warning = ''
-        lines = log.splitlines()
-        for i, line in enumerate(lines):
-            if "undefined reference" in line:
-                return line[line.index('undefined reference') :].strip()
-            elif "error: ld returned" in line:
-                if last_warning:
-                    return last_warning
-                elif "overflowed by" in lines[i - 1]:
-                    return "ld.bfd: region overflowed"
-                elif "ld.bfd: warning: " in lines[i - 1]:
-                    return "ld.bfd:" + lines[i - 1].split("ld.bfd:", 1)[-1]
-                return line
-            elif "error: " in line:
-                return line[line.index('error: ') :].strip()
-            elif ": in function " in line:
-                last_warning = line[line.index('in function') :].strip()
-            elif "CMake Error at" in line:
-                for next_line in lines[i + 1 :]:
-                    if next_line.strip():
-                        return line + ' ' + next_line
-                return line
-        return None
+                json_report.create(
+                    json_platform_file + "_footprint.json",
+                    version=self.env.version, platform=platform.name,
+                    filters=self.json_filters['footprint.json']
+                )
