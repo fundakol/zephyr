@@ -116,84 +116,20 @@ class XUnitXMLReport:
 
         return (fails, passes, errors, skips)
 
-    def create_with_all_testsuites(self, json_file: str | Path, filename: str | Path):
-        """Generate a report with all testsuites instead of doing this per platform."""
-
-        json_data = {}
-        with open(json_file) as json_results:
-            json_data = json.load(json_results)
-
-        env = json_data.get('environment', {})
-        version = env.get('zephyr_version', None)
-
-        eleTestsuites = ET.Element('testsuites')
-        all_suites = json_data.get("testsuites", [])
-
-        suites_to_report = all_suites
-            # do not create entry if everything is filtered out
-        if not self.env.options.detailed_skipped_report:
-            suites_to_report = list(
-                filter(lambda d: TwisterStatus(d.get('status')) != TwisterStatus.FILTER, all_suites)
-            )
-
-        for suite in suites_to_report:
-            duration = 0
-            eleTestsuite = ET.SubElement(
-                eleTestsuites,
-                'testsuite',
-                name=suite.get("name"),
-                time="0",
-                timestamp = self.timestamp,
-                tests="0",
-                failures="0",
-                errors="0",
-                skipped="0"
-            )
-            eleTSPropetries = ET.SubElement(eleTestsuite, 'properties')
-            # Multiple 'property' can be added to 'properties'
-            # differing by name and value
-            ET.SubElement(eleTSPropetries, 'property', name="version", value=version)
-            ET.SubElement(eleTSPropetries, 'property', name="platform", value=suite.get("platform"))
-            ET.SubElement(eleTSPropetries, 'property', name="architecture", value=suite.get("arch"))
-
-            total = 0
-            fails = passes = errors = skips = 0
-            handler_time = suite.get('execution_time', 0)
-            runnable = suite.get('runnable', 0)
-            duration += float(handler_time)
-            ts_status = TwisterStatus(suite.get('status'))
-            classname = Path(suite.get("name","")).name
-            for tc in suite.get("testcases", []):
-                status = TwisterStatus(tc.get('status'))
-                reason = tc.get('reason', suite.get('reason', 'Unknown'))
-                log = tc.get("log", suite.get("log"))
-
-                tc_duration = tc.get('execution_time', handler_time)
-                name = tc.get("identifier")
-                fails, passes, errors, skips = self.xunit_testcase(eleTestsuite,
-                    name, classname, status, ts_status, reason, tc_duration, runnable,
-                    (fails, passes, errors, skips), log, True)
-
-            total = errors + passes + fails + skips
-
-            eleTestsuite.attrib['time'] = f"{duration}"
-            eleTestsuite.attrib['failures'] = f"{fails}"
-            eleTestsuite.attrib['errors'] = f"{errors}"
-            eleTestsuite.attrib['skipped'] = f"{skips}"
-            eleTestsuite.attrib['tests'] = f"{total}"
-
-        ET.indent(eleTestsuites, space="\t", level=0)
-        result = ET.tostring(eleTestsuites)
-        with open(filename, 'wb') as report:
-            report.write(result)
-
     def create(
-        self, json_file: str | Path,
+        self,
+        json_file: str | Path,
         filename: str | Path,
         selected_platform: str | None = None,
-        full_report: bool = False
+        full_report: bool = False,
+        all_testsuites: bool = False,
     ):
-        """Create XUnit report from a json file."""
+        """Create XUnit report from a json file.
+
+        When all_testsuites is True, generate one testsuite element per suite
+        (with platform/arch in properties). Otherwise, generate one testsuite
+        per platform (optionally filtered by selected_platform).
+        """
         if selected_platform:
             selected = [selected_platform]
             logger.info(f"Writing target report for {selected_platform}...")
@@ -211,73 +147,133 @@ class XUnitXMLReport:
         eleTestsuites = ET.Element('testsuites')
         all_suites = json_data.get("testsuites", [])
 
-        for platform in selected:
-            suites = list(filter(lambda d: d['platform'] == platform, all_suites))
-            # do not create entry if everything is filtered out
+        if all_testsuites:
+            suites_to_report = all_suites
             if not self.env.options.detailed_skipped_report:
-                non_filtered = list(
-                    filter(lambda d: TwisterStatus(d.get('status')) != TwisterStatus.FILTER, suites)
+                suites_to_report = list(
+                    filter(
+                        lambda d: TwisterStatus(d.get('status')) != TwisterStatus.FILTER,
+                        all_suites,
+                    )
                 )
-                if not non_filtered:
-                    continue
-
-            duration = 0
-            eleTestsuite = ET.SubElement(eleTestsuites,
-                'testsuite',
-                name=platform,
-                timestamp = self.timestamp,
-                time="0",
-                tests="0",
-                failures="0",
-                errors="0", skipped="0"
-            )
-            eleTSPropetries = ET.SubElement(eleTestsuite, 'properties')
-            # Multiple 'property' can be added to 'properties'
-            # differing by name and value
-            ET.SubElement(eleTSPropetries, 'property', name="version", value=version)
-
-            total = 0
-            fails = passes = errors = skips = 0
-            for ts in suites:
-                handler_time = ts.get('execution_time', 0)
-                runnable = ts.get('runnable', 0)
+            for suite in suites_to_report:
+                duration = 0
+                eleTestsuite = ET.SubElement(
+                    eleTestsuites,
+                    'testsuite',
+                    name=suite.get("name"),
+                    time="0",
+                    timestamp=self.timestamp,
+                    tests="0",
+                    failures="0",
+                    errors="0",
+                    skipped="0"
+                )
+                eleTSPropetries = ET.SubElement(eleTestsuite, 'properties')
+                ET.SubElement(eleTSPropetries, 'property', name="version", value=version)
+                ET.SubElement(
+                    eleTSPropetries, 'property', name="platform", value=suite.get("platform")
+                )
+                ET.SubElement(
+                    eleTSPropetries, 'property', name="architecture", value=suite.get("arch")
+                )
+                fails = passes = errors = skips = 0
+                handler_time = suite.get('execution_time', 0)
+                runnable = suite.get('runnable', 0)
                 duration += float(handler_time)
+                ts_status = TwisterStatus(suite.get('status'))
+                classname = Path(suite.get("name", "")).name
+                for tc in suite.get("testcases", []):
+                    status = TwisterStatus(tc.get('status'))
+                    reason = tc.get('reason', suite.get('reason', 'Unknown'))
+                    log = tc.get("log", suite.get("log"))
+                    tc_duration = tc.get('execution_time', handler_time)
+                    name = tc.get("identifier")
+                    fails, passes, errors, skips = self.xunit_testcase(
+                        eleTestsuite,
+                        name, classname, status, ts_status, reason, tc_duration, runnable,
+                        (fails, passes, errors, skips), log, True
+                    )
+                total = errors + passes + fails + skips
+                eleTestsuite.attrib['time'] = f"{duration}"
+                eleTestsuite.attrib['failures'] = f"{fails}"
+                eleTestsuite.attrib['errors'] = f"{errors}"
+                eleTestsuite.attrib['skipped'] = f"{skips}"
+                eleTestsuite.attrib['tests'] = f"{total}"
+        else:
+            for platform in selected:
+                suites = list(filter(lambda d: d['platform'] == platform, all_suites))
+                # do not create entry if everything is filtered out
+                if not self.env.options.detailed_skipped_report:
+                    non_filtered = list(
+                        filter(
+                            lambda d: TwisterStatus(d.get('status')) != TwisterStatus.FILTER,
+                            suites,
+                        )
+                    )
+                    if not non_filtered:
+                        continue
 
-                ts_status = TwisterStatus(ts.get('status'))
-                # Do not report filtered testcases
-                if (
-                    ts_status == TwisterStatus.FILTER
-                    and not self.env.options.detailed_skipped_report
-                ):
-                    continue
-                if full_report:
-                    classname = Path(ts.get("name","")).name
-                    for tc in ts.get("testcases", []):
-                        status = TwisterStatus(tc.get('status'))
-                        reason = tc.get('reason', ts.get('reason', 'Unknown'))
-                        log = tc.get("log", ts.get("log"))
+                duration = 0
+                eleTestsuite = ET.SubElement(
+                    eleTestsuites,
+                    'testsuite',
+                    name=platform,
+                    timestamp=self.timestamp,
+                    time="0",
+                    tests="0",
+                    failures="0",
+                    errors="0",
+                    skipped="0"
+                )
+                eleTSPropetries = ET.SubElement(eleTestsuite, 'properties')
+                # Multiple 'property' can be added to 'properties'
+                # differing by name and value
+                ET.SubElement(eleTSPropetries, 'property', name="version", value=version)
 
-                        tc_duration = tc.get('execution_time', handler_time)
-                        name = tc.get("identifier")
-                        fails, passes, errors, skips = self.xunit_testcase(eleTestsuite,
-                            name, classname, status, ts_status, reason, tc_duration, runnable,
-                            (fails, passes, errors, skips), log, True)
-                else:
-                    reason = ts.get('reason', 'Unknown')
-                    name = ts.get("name")
-                    classname = f"{platform}:{name}"
-                    log = ts.get("log")
-                    fails, passes, errors, skips = self.xunit_testcase(eleTestsuite,
-                        name, classname, ts_status, ts_status, reason, handler_time, runnable,
-                        (fails, passes, errors, skips), log, False)
+                total = 0
+                fails = passes = errors = skips = 0
+                for ts in suites:
+                    handler_time = ts.get('execution_time', 0)
+                    runnable = ts.get('runnable', 0)
+                    duration += float(handler_time)
+                    ts_status = TwisterStatus(ts.get('status'))
+                    # Do not report filtered testcases
+                    if (
+                        ts_status == TwisterStatus.FILTER
+                        and not self.env.options.detailed_skipped_report
+                    ):
+                        continue
+                    if full_report:
+                        classname = Path(ts.get("name", "")).name
+                        for tc in ts.get("testcases", []):
+                            status = TwisterStatus(tc.get('status'))
+                            reason = tc.get('reason', ts.get('reason', 'Unknown'))
+                            log = tc.get("log", ts.get("log"))
+                            tc_duration = tc.get('execution_time', handler_time)
+                            name = tc.get("identifier")
+                            fails, passes, errors, skips = self.xunit_testcase(
+                                eleTestsuite,
+                                name, classname, status, ts_status, reason, tc_duration, runnable,
+                                (fails, passes, errors, skips), log, True
+                            )
+                    else:
+                        reason = ts.get('reason', 'Unknown')
+                        name = ts.get('name')
+                        classname = f"{platform}:{name}"
+                        log = ts.get("log")
+                        fails, passes, errors, skips = self.xunit_testcase(
+                            eleTestsuite,
+                            name, classname, ts_status, ts_status, reason, handler_time, runnable,
+                            (fails, passes, errors, skips), log, False
+                        )
 
-            total = errors + passes + fails + skips
-
-            eleTestsuite.attrib['time'] = f"{duration}"
-            eleTestsuite.attrib['failures'] = f"{fails}"
-            eleTestsuite.attrib['errors'] = f"{errors}"
-            eleTestsuite.attrib['skipped'] = f"{skips}"
-            eleTestsuite.attrib['tests'] = f"{total}"
+                total = errors + passes + fails + skips
+                eleTestsuite.attrib['time'] = f"{duration}"
+                eleTestsuite.attrib['failures'] = f"{fails}"
+                eleTestsuite.attrib['errors'] = f"{errors}"
+                eleTestsuite.attrib['skipped'] = f"{skips}"
+                eleTestsuite.attrib['tests'] = f"{total}"
 
         ET.indent(eleTestsuites, space="\t", level=0)
         result = ET.tostring(eleTestsuites)
@@ -875,7 +871,7 @@ class Reporting:
         xunit_report = XUnitXMLReport(self.env, self.instances, self.selected_platforms)
         xunit_report.create(json_file, filename + ".xml", full_report=False)
         xunit_report.create(json_file, filename + "_report.xml", full_report=True)
-        xunit_report.create_with_all_testsuites(json_file, filename + "_suite_report.xml")
+        xunit_report.create(json_file, filename + "_suite_report.xml", all_testsuites=True)
 
         if platform_reports:
             self.target_report(json_file, outdir, suffix)
