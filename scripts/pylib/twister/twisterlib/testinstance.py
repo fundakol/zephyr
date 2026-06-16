@@ -15,6 +15,7 @@ import os
 import random
 import re
 from enum import Enum
+from pathlib import Path
 
 from twisterlib.constants import (
     PYTEST_HARNESSES,
@@ -45,7 +46,7 @@ logger = logging.getLogger('twister')
 
 
 class TestInstance:
-    """Class representing the execution of a particular TestSuite on a platform
+    """Class representing the execution of a particular TestSuite on a platform.
 
     @param test The TestSuite object we want to build/execute
     @param platform Platform object that we want to build and run against
@@ -55,24 +56,24 @@ class TestInstance:
 
     __test__ = False
 
-    def __init__(self, testsuite, platform, toolchain, outdir):
-
+    def __init__(
+        self, testsuite: TestSuite, platform: Platform, toolchain: str, outdir: str | Path
+    ) -> None:
         self.testsuite: TestSuite = testsuite
         self.platform: Platform = platform
 
         self._status = TwisterStatus.NONE
-        self.reason = None
-        self.metrics = dict()
+        self.metrics: dict = dict()
         self.handler = None
         self.recording = None
         self.coverage = None
         self.coverage_status = None
         self.outdir = outdir
         self.execution_time = 0
-        self.build_time = 0
-        self.retries = 0
+        self.build_time: float = 0
+        self.retries: int = 0
         self.toolchain = toolchain
-        self.name = os.path.join(platform.name, toolchain, testsuite.name)
+        self.name: str = os.path.join(platform.name, toolchain, testsuite.name)
         self.hardware_id: str | None = None
         self.suite_repeat = None
         self.test_repeat = None
@@ -96,11 +97,9 @@ class TestInstance:
         self.run_id = None
         self.domains = None
         # Instance need to use sysbuild if a given suite or a platform requires it
-        self.sysbuild = testsuite.sysbuild or platform.sysbuild
+        self.sysbuild: bool = testsuite.sysbuild or platform.sysbuild
 
-        self.run = False
-        self.testcases: list[TestCase] = []
-        self.init_cases()
+        self.run: bool = False
         self.filters = []
         self.filter_type = None
         self.required_applications = []
@@ -130,11 +129,28 @@ class TestInstance:
                 cw.writerows(self.recording)
 
     @property
+    def reason(self):
+        return self.testsuite.reason
+
+    @reason.setter
+    def reason(self, value):
+        self.testsuite.reason = value
+
+    @property
+    def testcases(self) -> list[TestCase]:
+        return self.testsuite.testcases
+
+    @testcases.setter
+    def testcases(self, value: list[TestCase]):
+        self.testsuite.testcases = value
+
+    @property
     def status(self) -> TwisterStatus:
         return self._status
 
     @status.setter
     def status(self, value : TwisterStatus) -> None:
+        self.testsuite.status = value
         # Check for illegal assignments by value
         try:
             key = value.name if isinstance(value, Enum) else value
@@ -148,15 +164,10 @@ class TestInstance:
         self.reason = reason
         self.filter_type = filter_type
 
-    # Fix an issue with copying objects from testsuite, need better solution.
-    def init_cases(self):
-        for c in self.testsuite.testcases:
-            self.add_testcase(c.name, freeform=c.freeform)
-
     def _get_run_id(self):
-        """ generate run id from instance unique identifier and a random
-        number
-        If exist, get cached run id from previous run."""
+        """Generate run id from instance unique identifier and a random number.
+        If exist, get cached run id from previous run.
+        """
         run_id = ""
         run_id_file = os.path.join(self.build_dir, "run_id.txt")
         if os.path.exists(run_id_file):

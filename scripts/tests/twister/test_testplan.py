@@ -20,7 +20,7 @@ from twisterlib.quarantine import Quarantine
 from twisterlib.statuses import TwisterStatus
 from twisterlib.testinstance import TestInstance
 from twisterlib.testplan import TestConfiguration, TestPlan, change_skip_to_error_if_integration
-from twisterlib.testsuite import TestSuite
+from twisterlib.testsuite import TestCase, TestSuite
 from twisterlib.testsuitedata import RequiredApplication
 
 
@@ -1630,28 +1630,24 @@ TESTDATA_11 = [
 )
 def test_testplan_load_from_file(caplog, device_testing, expected_tfilter):
     def get_platform(name):
-        p = mock.Mock()
+        p = Platform()
         p.name = name
         p.normalized_name = name
         return p
 
-    ts1tc1 = mock.Mock()
-    ts1tc1.name = 'TS1.tc1'
+    ts1tc1 = TestCase('TS1.tc1')
     ts1 = mock.Mock(testcases=[ts1tc1])
     ts1.name = 'TestSuite 1'
     ts1.toolchain = 'zephyr'
     ts2 = mock.Mock(testcases=[])
     ts2.name = 'TestSuite 2'
     ts2.toolchain = 'zephyr'
-    ts3tc1 = mock.Mock()
-    ts3tc1.name = 'TS3.tc1'
-    ts3tc2 = mock.Mock()
-    ts3tc2.name = 'TS3.tc2'
+    ts3tc1 = TestCase('TS3.tc1')
+    ts3tc2 = TestCase('TS3.tc2')
     ts3 = mock.Mock(testcases=[ts3tc1, ts3tc2])
     ts3.name = 'TestSuite 3'
     ts3.toolchain = 'zephyr'
-    ts4tc1 = mock.Mock()
-    ts4tc1.name = 'TS4.tc1'
+    ts4tc1 = TestCase('TS4.tc1')
     ts4 = mock.Mock(testcases=[ts4tc1])
     ts4.name = 'TestSuite 4'
     ts4.toolchain = 'zephyr'
