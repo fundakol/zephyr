@@ -378,13 +378,13 @@ def _find_src_dir_path(test_dir_path):
 class TestCase:
     __test__ = False
 
-    def __init__(self, name):
-        self.duration = 0
+    def __init__(self, name: str):
+        self.duration: float = 0
         self.name = name
         self._status = TwisterStatus.NONE
-        self.reason = None
-        self.output = ""
-        self.freeform = False
+        self.reason: str | None = None
+        self.output: str = ""
+        self.freeform: bool = False
 
     @property
     def status(self) -> TwisterStatus:
@@ -452,6 +452,7 @@ class TestSuite:
         self.ztest_suite_names = []
 
         self._status = TwisterStatus.NONE
+        self.reason: str | None = None
 
         self.harness_config: HarnessConfig | None = None
         self.required_applications: list[RequiredApplication] = []
@@ -464,7 +465,7 @@ class TestSuite:
         return self._status
 
     @status.setter
-    def status(self, value : TwisterStatus) -> None:
+    def status(self, value: TwisterStatus) -> None:
         # Check for illegal assignments by value
         try:
             key = value.name if isinstance(value, Enum) else value

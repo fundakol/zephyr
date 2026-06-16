@@ -680,9 +680,6 @@ class Pytest(Script):
             except Exception as e:
                 logger.error(f'Error when parsing file {self.report_file}: {e}')
                 self.status = TwisterStatus.FAIL
-            finally:
-                if not self.instance.testcases:
-                    self.instance.init_cases()
 
         self.instance.status = self.status if self.status != TwisterStatus.NONE else \
                                TwisterStatus.FAIL

@@ -280,29 +280,6 @@ def test_testinstance_add_filter(testinstance):
     assert testinstance.filter_type == filter_type
 
 
-def test_testinstance_init_cases(all_testsuites_dict, class_testplan, platforms_list):
-    testsuite_path = 'scripts/tests/twister/test_data/testsuites/tests/test_a/test_a.check_1'
-    class_testplan.testsuites = all_testsuites_dict
-    testsuite = class_testplan.testsuites.get(testsuite_path)
-    class_testplan.platforms = platforms_list
-    platform = class_testplan.get_platform("demo_board_2")
-
-    testinstance = TestInstance(testsuite, platform, 'zephyr', class_testplan.env.outdir)
-
-    testinstance.init_cases()
-
-    assert all(
-        [
-            any(
-                [
-                    tcc.name == tc.name and tcc.freeform == tc.freeform \
-                        for tcc in testinstance.testsuite.testcases
-                ]
-            ) for tc in testsuite.testcases
-        ]
-    )
-
-
 @pytest.mark.parametrize('testinstance', [{'testsuite_kind': 'sample'}], indirect=True)
 def test_testinstance_get_run_id(testinstance):
     res = testinstance._get_run_id()
