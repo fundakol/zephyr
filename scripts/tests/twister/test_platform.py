@@ -6,19 +6,23 @@
 '''
 This test file contains tests for platform.py module of twister
 '''
+import textwrap
 from contextlib import nullcontext
-from unittest import mock
+from types import SimpleNamespace
 
 import pytest
+import yaml
 from jsonschema.exceptions import ValidationError
 from twisterlib.platform import Platform, Simulator, generate_platforms
 
 TESTDATA_1 = [
     (
-"""\
-identifier: dummy empty
-arch: arc
-""",
+        textwrap.dedent("""\
+            identifier: dummy empty
+            arch: arc
+        """),
+        'dummy empty',  # platform name
+        '',  # vendor
         {
             'name': 'dummy empty',
             'arch': 'arc',
@@ -39,42 +43,43 @@ arch: arc
             'env': [],
             'env_satisfied': True
         },
-        '<dummy empty on arc>'
     ),
     (
-"""\
-identifier: dummy full
-arch: riscv
-twister: true
-ram: 1024
-testing:
-  timeout_multiplier: 2.0
-  ignore_tags:
-    - tag1
-    - tag2
-  only_tags:
-    - tag3
-  default: true
-  binaries:
-    - dummy.exe
-    - dummy.bin
-flash: 4096
-supported:
-  - ble
-  - netif:openthread
-  - gpio
-vendor: vendor1
-tier: 1
-type: unit
-simulation:
-- name: nsim
-  exec: nsimdrv
-toolchain:
-  - zephyr
-  - llvm
-env:
-  - dummynonexistentvar
-""",
+        textwrap.dedent("""\
+            identifier: dummy full
+            arch: riscv
+            twister: true
+            ram: 1024
+            testing:
+                timeout_multiplier: 2.0
+                ignore_tags:
+                    - tag1
+                    - tag2
+                only_tags:
+                    - tag3
+                default: true
+                binaries:
+                    - dummy.exe
+                    - dummy.bin
+            flash: 4096
+            supported:
+            - ble
+            - netif:openthread
+            - gpio
+            vendor: vendor1
+            tier: 1
+            type: unit
+            simulation:
+                - name: nsim
+                  exec: nsimdrv
+            toolchain:
+            - zephyr
+            - llvm
+            env:
+            - dummynonexistentvar
+        """),
+        'dummy full',
+        'vendor1',
         {
             'name': 'dummy full',
             'arch': 'riscv',
@@ -95,23 +100,23 @@ env:
             'env': ['dummynonexistentvar'],
             'env_satisfied': False
         },
-        '<dummy full on riscv>'
     ),
 ]
 
-# This test is disabled because the Platform loading was changed significantly.
-# The test should be updated to reflect the new implementation.
 
 @pytest.mark.parametrize(
-    'platform_text, expected_data, expected_repr',
+    'platform_text, target, vendor, expected_data',
     TESTDATA_1,
-    ids=['almost empty specification', 'full specification']
+    ids=['almost-empty-specification', 'full-specification']
 )
-def xtest_platform_load(platform_text, expected_data, expected_repr):
-    platform = Platform()
+def test_platform_load(platform_text, target, vendor, expected_data):
+    board = SimpleNamespace(vendor=vendor)  # create fake board instance
+    aliases = []
+    data = yaml.safe_load(platform_text)
+    variant_data = {}
 
-    with mock.patch('builtins.open', mock.mock_open(read_data=platform_text)):
-        platform.load('dummy.yaml')
+    platform = Platform()
+    platform.load(board, target, aliases, data, variant_data)
 
     for k, v in expected_data.items():
         if not hasattr(platform, k):
@@ -122,9 +127,18 @@ def xtest_platform_load(platform_text, expected_data, expected_repr):
         if isinstance(v, list):
             assert sorted(att) == sorted(v)
         else:
-            assert att == v
+            assert att == v, f'Value of key "{k}" should be {v}: but was {att}'
 
-    assert platform.__repr__() == expected_repr
+
+@pytest.mark.parametrize(
+    'name,arch,expected_repr',
+    [
+        ('dummy full', 'riscv', '<dummy full on riscv>'),
+        ('dummy empty', 'arc', '<dummy empty on arc>'),
+    ]
+)
+def test_platform_string_representation(name, arch, expected_repr):
+    assert repr(Platform(name, arch)) == expected_repr
 
 
 TESTDATA_2 = [

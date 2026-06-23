@@ -11,6 +11,7 @@ import os
 import shutil
 from argparse import Namespace
 from itertools import groupby
+from typing import Any
 
 import list_boards
 import scl
@@ -34,6 +35,9 @@ class Simulator:
 
         return not bool(self.exec) or bool(shutil.which(self.exec))
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}(name='{self.name}', exec='{self.exec}')"
+
     def __str__(self):
         return f"Simulator(name: {self.name}, exec: {self.exec})"
 
@@ -53,44 +57,48 @@ class Platform:
         os.path.join(ZEPHYR_BASE, "scripts", "schemas", "twister", "platform-schema.yaml")
     )
 
-    def __init__(self):
-        """Constructor.
-
-        """
-
-        self.name = ""
-        self.aliases = []
-        self.normalized_name = ""
+    def __init__(self, name: str = "", arch: str | None = None) -> None:
+        """Initialize object."""
+        self.name = name
+        self.arch = arch
+        self.aliases: list[str] = []
+        self.normalized_name: str = ""
         # if sysbuild to be used by default on a given platform
-        self.sysbuild = False
-        self.twister = True
+        self.sysbuild: bool = False
+        self.twister: bool = True
         # if no RAM size is specified by the board, take a default of 128K
-        self.ram = 128
+        self.ram: int = 128
 
-        self.timeout_multiplier = 1.0
-        self.ignore_tags = []
-        self.only_tags = []
-        self.default = False
-        self.flash_before = False
+        self.timeout_multiplier: float = 1.0
+        self.ignore_tags: list[str] = []
+        self.only_tags: list[str] = []
+        self.default: bool = False
+        self.flash_before: bool = False
         # if no flash size is specified by the board, take a default of 512K
-        self.flash = 512
-        self.supported = set()
-        self.binaries = []
+        self.flash: int = 512
+        self.supported: set[str] = set()
+        self.binaries: list[str] = []
 
-        self.arch = None
-        self.vendor = ""
-        self.tier = -1
-        self.type = "na"
+        self.vendor: str = ""
+        self.tier: int = -1
+        self.type: str = "na"
         self.simulators: list[Simulator] = []
         self.simulation: str = "na"
-        self.supported_toolchains = []
-        self.env = []
-        self.env_satisfied = True
-        self.filter_data = dict()
-        self.uart = ""
-        self.resc = ""
+        self.supported_toolchains: list[str] = []
+        self.env: list[str] = []
+        self.env_satisfied: bool = True
+        self.filter_data: dict[str, Any] = dict()
+        self.uart: str = ""
+        self.resc: str = ""
 
-    def load(self, board, target, aliases, data, variant_data):
+    def load(
+        self,
+        board,
+        target: str,
+        aliases: list[str],
+        data: dict[str, Any],
+        variant_data: dict[str, Any]
+    ) -> None:
         """Load the platform data from the board data and target data
         board: the board object as per the zephyr build system
         target: the target name of the board as per the zephyr build system
@@ -141,10 +149,8 @@ class Platform:
         self.type = variant_data.get('type', data.get('type', self.type))
 
         self.simulators = [
-            Simulator(data) for data in variant_data.get(
-                'simulation',
-                data.get('simulation', self.simulators)
-            )
+            Simulator(d)
+            for d in variant_data.get('simulation', data.get('simulation', self.simulators))
         ]
         default_sim = self.simulator_by_name(None)
         if default_sim:
